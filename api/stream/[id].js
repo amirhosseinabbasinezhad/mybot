@@ -26,7 +26,7 @@ function getClient() {
 
 module.exports = async (req, res) => {
   const { id } = req.query;
-  const relayChatId = process.env.RELAY_CHAT_ID;
+  const botUsername = process.env.RELAY_BOT_USERNAME;
 
   if (!id) {
     res.status(400).send("شناسه فایل مشخص نیست");
@@ -35,7 +35,8 @@ module.exports = async (req, res) => {
 
   try {
     const client = await getClient();
-    const messages = await client.getMessages(relayChatId, { ids: [parseInt(id, 10)] });
+    const entity = await client.getEntity(botUsername);
+    const messages = await client.getMessages(entity, { ids: [parseInt(id, 10)] });
     const message = messages && messages[0];
 
     if (!message || !message.media || !message.media.document) {
