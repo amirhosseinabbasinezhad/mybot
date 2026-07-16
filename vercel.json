@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/stream/[id].js": { "maxDuration": 60 },
+    "api/bot.js": { "maxDuration": 30 }
+  }
+}
