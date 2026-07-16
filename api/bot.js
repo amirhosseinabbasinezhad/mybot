@@ -7,7 +7,8 @@ module.exports = async (req, res) => {
     res.status(200).send("OK");
     return;
   }
-
+ 
+  
   const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
   const RELAY_CHAT_ID = process.env.RELAY_CHAT_ID; // آیدی عددی چت اکانت شخصی با این بات
   const BASE_URL = process.env.PUBLIC_BASE_URL; // مثلا https://yourapp.vercel.app
