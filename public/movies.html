@@ -124,26 +124,32 @@
     gap: 10px;
   }
 
+  li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+
+  li:hover {
+    background: var(--card-hover);
+    border-color: var(--gold-dim);
+  }
+
   li a {
     display: flex;
     align-items: center;
     gap: 14px;
-    padding: 14px 16px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    padding: 10px 14px;
+    flex: 1;
+    min-width: 0;
     color: var(--text);
     text-decoration: none;
-    transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
   }
-
-  li a:hover, li a:focus-visible {
-    background: var(--card-hover);
-    border-color: var(--gold-dim);
-    outline: none;
-  }
-
-  li a:active { transform: scale(0.99); }
 
   .poster {
     width: 40px;
@@ -156,13 +162,56 @@
     justify-content: center;
   }
 
-  .title { font-size: 16px; font-weight: 600; flex: 1; min-width: 0; }
-  .title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .title {
+    font-size: 16px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+  }
+  .title span {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   .go {
     color: var(--gold);
     opacity: 0.7;
     flex-shrink: 0;
+  }
+
+  /* ===== دکمه دانلود ===== */
+  .btn-download {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-family: inherit;
+  }
+
+  .btn-download:hover {
+    color: var(--gold);
+    background: rgba(224,169,74,0.1);
+  }
+
+  .btn-download svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+
+  .btn-download.downloading {
+    color: #4caf50;
+    cursor: wait;
   }
 
   .empty, .no-match {
@@ -185,6 +234,15 @@
   @keyframes shimmer {
     0% { background-position: 200% 0; }
     100% { background-position: -200% 0; }
+  }
+
+  @media (max-width: 600px) {
+    .btn-download span {
+      display: none;
+    }
+    .btn-download {
+      padding: 8px 10px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -224,10 +282,50 @@
     return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m23 7-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
   }
 
+  function downloadSvg() {
+    return '<svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>';
+  }
+
+  // ============================================================
+  // 📥 تابع دانلود فیلم
+  // ============================================================
+  function downloadMovie(movieName, button) {
+    const downloadUrl = `/api/stream/${encodeURIComponent(movieName)}`;
+
+    button.classList.add('downloading');
+    button.innerHTML = '⏳';
+
+    fetch(downloadUrl)
+      .then(response => {
+        if (!response.ok) throw new Error('خطا در دانلود');
+        return response.blob();
+      })
+      .then(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${movieName}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        button.classList.remove('downloading');
+        button.innerHTML = downloadSvg() + ' <span>دانلود</span>';
+      })
+      .catch(err => {
+        console.error('Download error:', err);
+        button.classList.remove('downloading');
+        button.innerHTML = downloadSvg() + ' <span>خطا</span>';
+        setTimeout(() => {
+          button.innerHTML = downloadSvg() + ' <span>دانلود</span>';
+        }, 2000);
+      });
+  }
+
   function render(movies) {
-    const list = document.getElementById("list");
-    const count = document.getElementById("count");
-    count.textContent = allMovies.length ? allMovies.length + " فیلم" : "";
+    const list = document.getElementById('list');
+    const count = document.getElementById('count');
+    count.textContent = allMovies.length ? allMovies.length + ' فیلم' : '';
 
     if (!allMovies.length) {
       list.innerHTML =
@@ -241,37 +339,39 @@
     }
 
     list.innerHTML = movies
-      .map(
-        (m) => `
+      .map((m) => `
         <li>
           <a href="/watch.html?id=${encodeURIComponent(m.name)}">
             <div class="poster">${iconSvg()}</div>
             <div class="title"><span>${escapeHtml(m.name)}</span></div>
             <svg class="go" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
           </a>
-        </li>`
-      )
-      .join("");
+          <button class="btn-download" onclick="downloadMovie('${escapeHtml(m.name)}', this)">
+            ${downloadSvg()} <span>دانلود</span>
+          </button>
+        </li>
+      `)
+      .join('');
   }
 
   function escapeHtml(str) {
-    const div = document.createElement("div");
+    const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
   }
 
-  fetch("/api/movies")
+  fetch('/api/movies')
     .then((r) => r.json())
     .then((movies) => {
       allMovies = Array.isArray(movies) ? movies : [];
       render(allMovies);
     })
     .catch(() => {
-      document.getElementById("list").innerHTML =
+      document.getElementById('list').innerHTML =
         '<li class="no-match">خطا در بارگذاری لیست. صفحه رو رفرش کن.</li>';
     });
 
-  document.getElementById("search").addEventListener("input", (e) => {
+  document.getElementById('search').addEventListener('input', (e) => {
     const q = e.target.value.trim().toLowerCase();
     const filtered = q ? allMovies.filter((m) => m.name.toLowerCase().includes(q)) : allMovies;
     render(filtered);
