@@ -1,9 +1,11 @@
 // این فانکشن webhook باته که تلگرام هر پیام جدید رو بهش می‌فرسته.
 // - وقتی فایل ویدیویی می‌رسه: اونو (بدون برچسب "فوروارد شده") به چت رله کپی می‌کنه
-//   و از فرستنده می‌پرسه چه اسمی برای لینکش بذاره.
-// - وقتی جواب اسم می‌رسه (به‌صورت ریپلای به همون سوال): کپشن فایل کپی‌شده رو
-//   با همون اسم آپدیت می‌کنه و لینک نهایی رو می‌فرسته.
-// - فقط اکانت مجاز (ALLOWED_USER_ID) اجازه استفاده داره.
+//   و از فرستنده می‌پرسه چه اسمی برای این فیلم بذاره.
+// - وقتی جواب اسم می‌رسه (به‌صورت ریپلای به همون سوال): اسم فیلم + شناسه پیام
+//   رو تو MongoDB ذخیره می‌کنه و لینک نهایی رو می‌فرسته.
+// - فقط اکانت‌های مجاز (ALLOWED_USER_ID) اجازه استفاده دارن.
+
+const { getDb } = require("../lib/db");
 
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
@@ -45,14 +47,25 @@ module.exports = async (req, res) => {
     const slug = sanitizeSlug(message.text) || `f${copiedId}`;
 
     try {
-      const edited = await editCaption(BOT_TOKEN, RELAY_CHAT_ID, copiedId, slug);
-      if (!edited.ok) throw new Error(JSON.stringify(edited));
+      const db = await getDb();
+      await db.collection("movies").updateOne(
+        { name: slug },
+        {
+          $set: { name: slug, messageId: copiedId, updatedAt: new Date() },
+          $setOnInsert: { createdAt: new Date() },
+        },
+        { upsert: true }
+      );
 
       const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(slug)}`;
-      await sendMessage(BOT_TOKEN, chatId, `لینک آماده شد:\n${link}`);
+      await sendMessage(
+        BOT_TOKEN,
+        chatId,
+        `لینک آماده شد:\n${link}\n\nلیست همه فیلم‌ها:\n${BASE_URL}/movies.html`
+      );
     } catch (err) {
       console.error(err);
-      await sendMessage(BOT_TOKEN, chatId, "این اسم قابل استفاده نبود یا یه مشکلی پیش اومد. یه اسم دیگه (فقط حروف/عدد انگلیسی) امتحان کن، یا دوباره فیلم رو بفرست.");
+      await sendMessage(BOT_TOKEN, chatId, "یه مشکلی پیش اومد، دوباره امتحان کن.");
     }
 
     res.status(200).json({ ok: true });
@@ -106,7 +119,7 @@ async function askForSlug(token, chatId, copiedId) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `چه اسمی (فقط حروف/عدد انگلیسی، بدون فاصله) برای لینک این فیلم بذارم؟\n[ref:${copiedId}]`,
+      text: `اسم این فیلم چی باشه؟ (فقط حروف/عدد انگلیسی، بدون فاصله)\n[ref:${copiedId}]`,
       reply_markup: { force_reply: true },
     }),
   });
@@ -120,19 +133,6 @@ async function copyMessage(token, toChatId, fromChatId, messageId) {
       chat_id: toChatId,
       from_chat_id: fromChatId,
       message_id: messageId,
-    }),
-  });
-  return r.json();
-}
-
-async function editCaption(token, chatId, messageId, caption) {
-  const r = await fetch(`https://api.telegram.org/bot${token}/editMessageCaption`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      message_id: messageId,
-      caption,
     }),
   });
   return r.json();

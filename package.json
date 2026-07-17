@@ -5,7 +5,8 @@
   "description": "بات تلگرام + استریمر ویدیو روی Vercel، بدون نیاز به VPS",
   "dependencies": {
     "telegram": "^2.22.2",
-    "big-integer": "^1.6.52"
+    "big-integer": "^1.6.52",
+    "mongodb": "^6.5.0"
   },
   "devDependencies": {
     "input": "^1.0.1"

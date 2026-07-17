@@ -1,10 +1,11 @@
 // این فانکشن با اکانت شخصی (Session String) به تلگرام وصل میشه و فایل رو
 // تیکه‌تیکه (بر اساس Range که مرورگر/تلویزیون درخواست می‌ده) استریم می‌کنه.
-// چون از طریق اکانت واقعی کاربر متصل میشه، محدودیت ۲۰ مگابایتی بات رو نداره.
+// اسم فیلم رو تو MongoDB جستجو می‌کنه تا شناسه دقیق پیام رو پیدا کنه.
 
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const bigInt = require("big-integer");
+const { getDb } = require("../../lib/db");
 
 module.exports.config = {
   api: { bodyParser: false, responseLimit: false },
@@ -35,23 +36,23 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log("[stream] شروع، در حال اتصال...");
-    const client = await getClient();
-    console.log("[stream] وصل شد. در حال پیدا کردن بات...");
-    const entity = await client.getEntity(botUsername);
-    console.log("[stream] بات پیدا شد. در حال گرفتن پیام‌ها...");
-    const recent = await client.getMessages(entity, { limit: 300 });
-    console.log(`[stream] ${recent.length} پیام گرفته شد.`);
-    const message = recent.find(
-      (m) => m.media && m.media.document && (m.message || "").trim().toLowerCase() === requestedSlug
-    );
+    const db = await getDb();
+    const movie = await db.collection("movies").findOne({ name: requestedSlug });
 
-    if (!message) {
-      console.log(`[stream] فیلمی با اسم "${requestedSlug}" پیدا نشد.`);
+    if (!movie) {
       res.status(404).send("فیلمی با این اسم پیدا نشد.");
       return;
     }
-    console.log("[stream] فیلم پیدا شد. در حال آماده‌سازی دانلود...");
+
+    const client = await getClient();
+    const entity = await client.getEntity(botUsername);
+    const messages = await client.getMessages(entity, { ids: [movie.messageId] });
+    const message = messages && messages[0];
+
+    if (!message || !message.media || !message.media.document) {
+      res.status(404).send("فایل روی تلگرام پیدا نشد (شاید پاک شده باشه).");
+      return;
+    }
 
     const doc = message.media.document;
     const fileSize = Number(doc.size);
@@ -70,8 +71,6 @@ module.exports = async (req, res) => {
       }
     }
 
-    // هر درخواست رو به یه تکه کوچیک محدود می‌کنیم تا زودتر از سقف زمانی تابع تموم بشه.
-    // پلیر ویدیو خودش تکه بعدی رو با یه درخواست جدید می‌گیره.
     if (end - start + 1 > CHUNK_SIZE) {
       end = start + CHUNK_SIZE - 1;
     }
@@ -91,13 +90,9 @@ module.exports = async (req, res) => {
       limit: end - start + 1,
     });
 
-    console.log(`[stream] شروع دانلود بایت ${start} تا ${end}...`);
-    let received = 0;
     for await (const chunk of iter) {
-      received += chunk.length;
       res.write(chunk);
     }
-    console.log(`[stream] دانلود تموم شد، ${received} بایت فرستاده شد.`);
     res.end();
   } catch (err) {
     console.error("[stream] خطا:", err);

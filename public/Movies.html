@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>لیست فیلم‌ها</title>
+<style>
+  body {
+    margin: 0;
+    padding: 24px;
+    background: #111;
+    color: #eee;
+    font-family: Tahoma, sans-serif;
+    min-height: 100vh;
+  }
+  h1 { font-size: 22px; margin-bottom: 20px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li {
+    margin-bottom: 12px;
+  }
+  a {
+    display: block;
+    padding: 16px;
+    background: #1e1e1e;
+    border-radius: 10px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 18px;
+  }
+  a:active, a:hover { background: #2a2a2a; }
+  .empty { color: #888; }
+</style>
+</head>
+<body>
+  <h1>فیلم‌ها</h1>
+  <ul id="list"><li class="empty">در حال بارگذاری...</li></ul>
+  <script>
+    fetch("/api/movies")
+      .then((r) => r.json())
+      .then((movies) => {
+        const list = document.getElementById("list");
+        list.innerHTML = "";
+        if (!movies.length) {
+          list.innerHTML = '<li class="empty">هنوز فیلمی اضافه نشده.</li>';
+          return;
+        }
+        movies.forEach((m) => {
+          const li = document.createElement("li");
+          const a = document.createElement("a");
+          a.href = "/watch.html?id=" + encodeURIComponent(m.name);
+          a.textContent = m.name;
+          li.appendChild(a);
+          list.appendChild(li);
+        });
+      })
+      .catch(() => {
+        document.getElementById("list").innerHTML = '<li class="empty">خطا در بارگذاری لیست.</li>';
+      });
+  </script>
+</body>
+</html>
