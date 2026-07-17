@@ -37,8 +37,6 @@ module.exports = async (req, res) => {
   const requestedSlug = (req.query.id || "").toString().trim().toLowerCase();
 
   console.log("[stream] New request:", requestedSlug);
-  console.log("[stream] Method:", req.method);
-  console.log("[stream] Range header:", req.headers.range || "None");
 
   if (!requestedSlug) {
     res.status(400).send("لینک ناقصه");
@@ -96,8 +94,11 @@ module.exports = async (req, res) => {
     const mimeType = doc.mimeType || "video/mp4";
 
     // ========================================
-    // ✅ پشتیبانی کامل از Range
+    // ✅ تنظیمات برای کاهش مصرف اینترنت
     // ========================================
+    const CHUNK_SIZE = 1 * 1024 * 1024; // 1 مگابایت (کمتر = مصرف کمتر)
+    const REQUEST_SIZE = 64 * 1024; // 64KB
+
     let start = 0;
     let end = fileSize - 1;
     const range = req.headers.range;
@@ -106,57 +107,57 @@ module.exports = async (req, res) => {
       const match = /bytes=(\d+)-(\d*)/.exec(range);
       if (match) {
         start = parseInt(match[1], 10);
-        if (match[2] && match[2] !== "") {
-          end = parseInt(match[2], 10);
-        }
+        if (match[2]) end = parseInt(match[2], 10);
       }
     }
 
-    // محدود کردن به اندازه فیلم
-    if (start >= fileSize) {
-      res.status(416).send("Range not satisfiable");
-      return;
+    if (end - start + 1 > CHUNK_SIZE) {
+      end = start + CHUNK_SIZE - 1;
     }
-    if (end >= fileSize) end = fileSize - 1;
-
-    const contentLength = end - start + 1;
-
-    console.log(`[stream] Sending: ${start}-${end}/${fileSize} (${contentLength} bytes)`);
+    if (end > fileSize - 1) end = fileSize - 1;
 
     // ========================================
-    // ✅ هدرهای کامل برای دانلود
+    // ✅ هدرهای بهینه با کش
     // ========================================
     res.writeHead(206, {
       "Content-Type": mimeType,
-      "Content-Length": contentLength,
+      "Content-Length": end - start + 1,
       "Content-Range": `bytes ${start}-${end}/${fileSize}`,
       "Accept-Ranges": "bytes",
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-      "Access-Control-Allow-Headers": "Range, Content-Range, Accept-Encoding",
-      "Access-Control-Expose-Headers": "Content-Range, Accept-Ranges, Content-Length",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "public, max-age=86400, stale-while-revalidate=86400", // ← کش ۲۴ ساعته
+      "Connection": "keep-alive",
     });
 
+    console.log(`[stream] Sending: ${start}-${end}/${fileSize}`);
+
     // ========================================
-    // ✅ دانلود دقیق از تلگرام
+    // ✅ دانلود با تنظیمات کم مصرف
     // ========================================
     const iter = client.iterDownload({
       file: message.media,
       offset: bigInt(start),
-      limit: contentLength,
-      requestSize: 1024 * 1024, // 1MB
-      poolSize: 2,
+      limit: end - start + 1,
+      requestSize: REQUEST_SIZE,
+      poolSize: 1, // ← فقط ۱ تا همزمان (کمترین مصرف)
     });
 
     let bytesSent = 0;
+    let lastLog = Date.now();
+
     for await (const chunk of iter) {
       if (res.destroyed) break;
       res.write(chunk);
       bytesSent += chunk.length;
+
+      if (Date.now() - lastLog > 10000) {
+        const percent = ((bytesSent / (end - start + 1)) * 100).toFixed(1);
+        console.log(`[stream] Progress: ${percent}%`);
+        lastLog = Date.now();
+      }
     }
 
-    console.log(`[stream] ✅ Complete: ${bytesSent} bytes sent`);
+    console.log(`[stream] ✅ Complete: ${bytesSent} bytes`);
     res.end();
 
   } catch (err) {
