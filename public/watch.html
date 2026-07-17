@@ -14,7 +14,9 @@
     --text: #f3efe6;
     --text-muted: #9a988f;
   }
+
   * { box-sizing: border-box; }
+
   html, body {
     margin: 0;
     height: 100%;
@@ -22,6 +24,7 @@
     font-family: "Vazirmatn", Tahoma, sans-serif;
     overflow: hidden;
   }
+
   .stage {
     position: relative;
     width: 100%;
@@ -30,12 +33,14 @@
     align-items: center;
     justify-content: center;
   }
+
   video {
     width: 100%;
     height: 100%;
     object-fit: contain;
     background: #000;
   }
+
   .topbar {
     position: absolute;
     top: 0;
@@ -51,8 +56,11 @@
     transition: opacity 0.4s ease;
     pointer-events: none;
   }
+
   .topbar a, .topbar .name { pointer-events: auto; }
+
   .topbar.hidden { opacity: 0; }
+
   .back {
     display: flex;
     align-items: center;
@@ -67,6 +75,7 @@
     backdrop-filter: blur(6px);
   }
   .back:hover { background: rgba(255,255,255,0.15); }
+
   .name {
     color: var(--text);
     font-size: 15px;
@@ -75,6 +84,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+
   .center-msg {
     position: absolute;
     inset: 0;
@@ -87,6 +97,7 @@
     text-align: center;
     padding: 20px;
   }
+
   .spinner {
     width: 40px;
     height: 40px;
@@ -95,24 +106,16 @@
     border-top-color: var(--gold);
     animation: spin 0.9s linear infinite;
   }
+
   @keyframes spin { to { transform: rotate(360deg); } }
+
   .error-box {
     color: var(--text);
     font-size: 15px;
     max-width: 320px;
     line-height: 1.8;
   }
-  .error-box button {
-    margin-top: 14px;
-    background: var(--gold);
-    color: #000;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 9px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-  }
+
   .error-box a {
     display: inline-block;
     margin-top: 14px;
@@ -124,6 +127,7 @@
     font-weight: 600;
     font-size: 14px;
   }
+
   @media (prefers-reduced-motion: reduce) {
     .spinner { animation-duration: 1.6s; }
   }
@@ -132,14 +136,7 @@
 <body>
 
 <div class="stage">
-  <video 
-    id="player" 
-    controls 
-    autoplay 
-    playsinline
-    preload="auto"
-    crossorigin="anonymous"
-  ></video>
+  <video id="player" controls autoplay playsinline></video>
 
   <div class="topbar" id="topbar">
     <a class="back" href="/movies.html" aria-label="بازگشت به لیست فیلم‌ها">
@@ -150,7 +147,6 @@
 
   <div class="center-msg" id="status">
     <div class="spinner"></div>
-    <div style="color:var(--text-muted);font-size:14px;">در حال بارگذاری...</div>
   </div>
 </div>
 
@@ -159,150 +155,35 @@
   const id = params.get("id");
   const video = document.getElementById("player");
   const statusEl = document.getElementById("status");
+  const topbar = document.getElementById("topbar");
   const titleEl = document.getElementById("title");
 
   if (!id) {
     showError("لینک ناقصه.");
   } else {
     titleEl.textContent = decodeURIComponent(id);
-    
-    // ============================================
-    // 🚀 تنظیمات برای پخش روان با اینترنت کند
-    // ============================================
-    video.preload = "auto";
-
     video.src = "/api/stream/" + encodeURIComponent(id);
 
-    // وقتی فیلم آماده شد
-    video.addEventListener("loadeddata", () => {
-      statusEl.style.display = "none";
-    });
-
-    video.addEventListener("playing", () => {
-      statusEl.style.display = "none";
-    });
-
-    video.addEventListener("waiting", () => {
-      statusEl.innerHTML = `
-        <div class="spinner"></div>
-        <div style="color:var(--text-muted);font-size:14px;">⏳ در حال بافر...</div>
-      `;
-      statusEl.style.display = "flex";
-    });
-
-    // ============================================
-    // 📊 نمایش وضعیت بافر
-    // ============================================
-    video.addEventListener("progress", () => {
-      const buffered = video.buffered;
-      if (buffered.length > 0) {
-        const bufferedEnd = buffered.end(buffered.length - 1);
-        const duration = video.duration;
-        if (duration > 0) {
-          const percent = (bufferedEnd / duration) * 100;
-          console.log(`📊 بافر: ${percent.toFixed(1)}%`);
-          
-          // اگر بافر کمتر از ۵٪ بود و فیلم در حال پخش بود، مکث کن تا بافر شود
-          if (percent < 5 && !video.paused) {
-            console.log("⚠️ بافر کم است، مکث برای بافر کردن...");
-            video.pause();
-            statusEl.innerHTML = `
-              <div class="spinner"></div>
-              <div style="color:var(--text-muted);font-size:14px;">⏳ بافر کردن (${percent.toFixed(1)}%)...</div>
-            `;
-            statusEl.style.display = "flex";
-            
-            setTimeout(() => {
-              if (video.buffered.length > 0) {
-                const newBuffered = video.buffered.end(video.buffered.length - 1);
-                const newPercent = (newBuffered / video.duration) * 100;
-                if (newPercent > 10) {
-                  video.play();
-                  statusEl.style.display = "none";
-                }
-              }
-            }, 5000);
-          }
-        }
-      }
-    });
-
-    // ============================================
-    // 🔄 مدیریت خطا و قطعی
-    // ============================================
-    let retryCount = 0;
-
-    video.addEventListener("error", (e) => {
-      console.error("❌ خطای ویدیو:", e);
-      
-      if (video.error && video.error.code === 2) { // MEDIA_ERR_NETWORK
-        retryCount++;
-        if (retryCount < 3) {
-          console.log(`🔄 تلاش مجدد ${retryCount}...`);
-          statusEl.innerHTML = `
-            <div class="spinner"></div>
-            <div style="color:var(--text-muted);font-size:14px;">🔄 تلاش مجدد (${retryCount}/3)...</div>
-          `;
-          statusEl.style.display = "flex";
-          
-          setTimeout(() => {
-            video.load();
-            video.play();
-          }, 3000);
-        } else {
-          showError("اتصال قطع شد. لطفاً صفحه را رفرش کنید.");
-        }
-      } else {
-        showError("این فیلم پیدا نشد یا پخشش با مشکل مواجه شد.");
-      }
-    });
-
-    // اگر فیلم متوقف شد
-    video.addEventListener("stalled", () => {
-      console.log("⚠️ پخش متوقف شد، تلاش مجدد...");
-      video.play();
-    });
-
-    // ============================================
-    // 🎯 مدیریت نوار پیشرفت (Seek)
-    // ============================================
-    video.addEventListener("seeked", () => {
-      console.log("🎯 کاربر به موقعیت جدید رفت:", video.currentTime);
-      // اطمینان از پخش بعد از Seek
-      if (video.paused) {
-        video.play();
-      }
+    video.addEventListener("loadeddata", () => { statusEl.style.display = "none"; });
+    video.addEventListener("playing", () => { statusEl.style.display = "none"; });
+    video.addEventListener("waiting", () => { statusEl.innerHTML = '<div class="spinner"></div>'; statusEl.style.display = "flex"; });
+    video.addEventListener("error", () => {
+      showError("این فیلم پیدا نشد یا پخشش با مشکل مواجه شد.");
     });
   }
 
-  // ============================================
-  // 🛠 توابع کمکی
-  // ============================================
   function showError(msg) {
     statusEl.style.display = "flex";
-    statusEl.innerHTML = `
-      <div class="error-box">
-        ${msg}
-        <br>
-        <button onclick="location.reload()">🔄 تلاش مجدد</button>
-        <br>
-        <a href="/movies.html">← برگشت به لیست فیلم‌ها</a>
-      </div>
-    `;
+    statusEl.innerHTML =
+      '<div class="error-box">' + msg + '<br><a href="/movies.html">برگشت به لیست فیلم‌ها</a></div>';
   }
 
-  // مخفی/نمایش نوار بالا
   let hideTimer;
-  const topbar = document.getElementById("topbar");
-  
   function showTopbar() {
-    if (topbar) {
-      topbar.classList.remove("hidden");
-      clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => topbar.classList.add("hidden"), 2800);
-    }
+    topbar.classList.remove("hidden");
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(() => topbar.classList.add("hidden"), 2800);
   }
-  
   document.addEventListener("mousemove", showTopbar);
   document.addEventListener("touchstart", showTopbar);
   showTopbar();

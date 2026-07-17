@@ -1,23 +1,6 @@
 {
   "functions": {
-    "api/stream/[id].js": {
-      "maxDuration": 120,
-      "memory": 1024
-    },
-    "api/bot.js": {
-      "maxDuration": 10,
-      "memory": 300
-    }
-  },
-  "headers": [
-    {
-      "source": "/api/stream/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, HEAD, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Range, Content-Range, Accept-Encoding" },
-        { "key": "Access-Control-Expose-Headers", "value": "Content-Range, Accept-Ranges, Content-Length" }
-      ]
-    }
-  ]
+    "api/stream/[id].js": { "maxDuration": 60 },
+    "api/bot.js": { "maxDuration": 30 }
+  }
 }
