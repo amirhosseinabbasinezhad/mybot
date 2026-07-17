@@ -1,117 +1,143 @@
-const { TelegramClient, Api } = require("telegram");
-const { StringSession } = require("telegram/sessions");
-const bigInt = require("big-integer");
-const { getDb } = require("../../lib/db");
-
-module.exports.config = {
-  api: { bodyParser: false, responseLimit: false },
-};
-
-let clientPromise = null;
-
-function getClient() {
-  if (!clientPromise) {
-    const apiId = parseInt(process.env.TG_API_ID, 10);
-    const apiHash = process.env.TG_API_HASH;
-    const session = new StringSession(process.env.SESSION_STRING);
-    const client = new TelegramClient(session, apiId, apiHash, {
-      connectionRetries: 3,
-    });
-    clientPromise = client.connect().then(() => client);
-  }
-  return clientPromise;
-}
+const { getDb } = require("../lib/db");
 
 module.exports = async (req, res) => {
-  const relayChatId = parseInt(process.env.RELAY_CHAT_ID, 10); // ← اضافه شد
-  const requestedSlug = (req.query.id || "").toString().trim().toLowerCase();
+  if (req.method !== "POST") {
+    res.status(200).send("OK");
+    return;
+  }
 
-  if (!requestedSlug) {
-    res.status(400).send("لینک ناقصه");
+  const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+  const CHANNEL_USERNAME = process.env.CHANNEL_USERNAME; // فقط یوزرنیم
+  const BASE_URL = process.env.PUBLIC_BASE_URL;
+  const ALLOWED_USER_IDS = (process.env.ALLOWED_USER_ID || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const update = req.body;
+  const message = update && update.message;
+
+  if (!message) {
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  const chatId = message.chat.id;
+  const fromId = String((message.from && message.from.id) || "");
+
+  // بررسی دسترسی
+  if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
+    await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  // حالت ۱: پاسخ به سوال "اسم فیلم چیه؟"
+  const replyText = message.reply_to_message && message.reply_to_message.text;
+  const refMatch = replyText && /\[ref:(\d+)\]/.exec(replyText);
+
+  if (refMatch && message.text) {
+    const channelMessageId = parseInt(refMatch[1], 10);
+    const slug = sanitizeSlug(message.text) || `f${channelMessageId}`;
+
+    try {
+      const db = await getDb();
+      await db.collection("movies").updateOne(
+        { name: slug },
+        {
+          $set: { 
+            name: slug, 
+            channelUsername: CHANNEL_USERNAME, // ذخیره یوزرنیم
+            messageId: channelMessageId, 
+            updatedAt: new Date() 
+          },
+          $setOnInsert: { createdAt: new Date() },
+        },
+        { upsert: true }
+      );
+
+      const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(slug)}`;
+      await sendMessage(
+        BOT_TOKEN,
+        chatId,
+        `✅ لینک آماده شد:\n${link}\n\n📋 لیست همه فیلم‌ها:\n${BASE_URL}/movies.html`
+      );
+    } catch (err) {
+      console.error(err);
+      await sendMessage(BOT_TOKEN, chatId, "❌ یه مشکلی پیش اومد، دوباره امتحان کن.");
+    }
+
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  // حالت ۲: فایل جدید
+  const hasFile = message.document || message.video || message.audio;
+
+  if (!hasFile) {
+    await sendMessage(BOT_TOKEN, chatId, "📁 یه فایل ویدیویی یا فیلم برام بفرست.");
+    res.status(200).json({ ok: true });
     return;
   }
 
   try {
-    const db = await getDb();
-    const movie = await db.collection("movies").findOne({ name: requestedSlug });
-
-    if (!movie) {
-      res.status(404).send("فیلمی با این اسم پیدا نشد.");
-      return;
-    }
-
-    const client = await getClient();
-    // ← اصلاح: استفاده از RELAY_CHAT_ID به جای botUsername
-    const entity = await client.getEntity(relayChatId);
-
-    let message = null;
-    try {
-      const direct = await client.getMessages(entity, { ids: [movie.messageId] });
-      message = direct && direct[0] && direct[0].media && direct[0].media.document ? direct[0] : null;
-    } catch (e) {
-      console.log("[stream] روش مستقیم جواب نداد:", e.message);
-    }
-
-    if (!message) {
-      console.log("[stream] رفتن سراغ روش fallback...");
-      const recent = await client.getMessages(entity, {
-        limit: 200,
-        filter: new Api.InputMessagesFilterDocument(),
-      });
-      message = recent.find((m) => m.id === movie.messageId) || null;
-    }
-
-    if (!message || !message.media || !message.media.document) {
-      res.status(404).send("فایل روی تلگرام پیدا نشد (شاید پاک شده باشه).");
-      return;
-    }
-
-    const doc = message.media.document;
-    const fileSize = Number(doc.size);
-    const mimeType = doc.mimeType || "video/mp4";
-    const CHUNK_SIZE = 6 * 1024 * 1024;
-
-    let start = 0;
-    let end = fileSize - 1;
-    const range = req.headers.range;
-
-    if (range) {
-      const match = /bytes=(\d+)-(\d*)/.exec(range);
-      if (match) {
-        start = parseInt(match[1], 10);
-        if (match[2]) end = parseInt(match[2], 10);
-      }
-    }
-
-    if (end - start + 1 > CHUNK_SIZE) {
-      end = start + CHUNK_SIZE - 1;
-    }
-    if (end > fileSize - 1) end = fileSize - 1;
-
-    res.writeHead(206, {
-      "Content-Type": mimeType,
-      "Content-Length": end - start + 1,
-      "Content-Range": `bytes ${start}-${end}/${fileSize}`,
-      "Accept-Ranges": "bytes",
-      "Cache-Control": "no-store",
+    console.log("[bot] Forwarding to channel:", CHANNEL_USERNAME);
+    
+    // ارسال به کانال با یوزرنیم
+    const forward = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: CHANNEL_USERNAME, // ← فقط یوزرنیم
+        from_chat_id: chatId,
+        message_id: message.message_id,
+      }),
     });
-
-    const iter = client.iterDownload({
-      file: message.media,
-      offset: bigInt(start),
-      limit: end - start + 1,
-    });
-
-    for await (const chunk of iter) {
-      res.write(chunk);
+    
+    const result = await forward.json();
+    
+    if (!result.ok) {
+      throw new Error(result.description || "Unknown error");
     }
-    res.end();
+
+    const channelMessageId = result.result.message_id;
+    console.log("[bot] ✅ Message forwarded. ID:", channelMessageId);
+    
+    await askForSlug(BOT_TOKEN, chatId, channelMessageId);
   } catch (err) {
-    console.error("[stream] خطا:", err);
-    if (!res.headersSent) {
-      res.status(500).send("خطا در پخش فایل");
-    } else {
-      res.end();
-    }
+    console.error("[bot] ❌ Error:", err);
+    await sendMessage(BOT_TOKEN, chatId, "❌ خطا در ارسال به کانال. مطمئن شوید بات به کانال اضافه شده است.");
   }
+
+  res.status(200).json({ ok: true });
 };
+
+function sanitizeSlug(text) {
+  return text
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[\/\\?%*:|"'<>#&=]+/g, "")
+    .replace(/[a-zA-Z]/g, (c) => c.toLowerCase())
+    .slice(0, 60);
+}
+
+async function sendMessage(token, chatId, text) {
+  const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
+  return r.json();
+}
+
+async function askForSlug(token, chatId, channelMessageId) {
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: `🎬 اسم این فیلم چی باشه؟ (فقط حروف/عدد انگلیسی، بدون فاصله)\n[ref:${channelMessageId}]`,
+      reply_markup: { force_reply: true },
+    }),
+  });
+}

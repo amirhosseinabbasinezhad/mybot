@@ -1,10 +1,3 @@
-// این فانکشن webhook باته که تلگرام هر پیام جدید رو بهش می‌فرسته.
-// - وقتی فایل ویدیویی می‌رسه: اونو (بدون برچسب "فوروارد شده") به چت رله کپی می‌کنه
-//   و از فرستنده می‌پرسه چه اسمی برای این فیلم بذاره.
-// - وقتی جواب اسم می‌رسه (به‌صورت ریپلای به همون سوال): اسم فیلم + شناسه پیام
-//   رو تو MongoDB ذخیره می‌کنه و لینک نهایی رو می‌فرسته.
-// - فقط اکانت‌های مجاز (ALLOWED_USER_ID) اجازه استفاده دارن.
-
 const { getDb } = require("../lib/db");
 
 module.exports = async (req, res) => {
@@ -14,7 +7,7 @@ module.exports = async (req, res) => {
   }
 
   const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const RELAY_CHAT_ID = process.env.RELAY_CHAT_ID;
+  const CHANNEL_USERNAME = process.env.CHANNEL_USERNAME; // فقط یوزرنیم
   const BASE_URL = process.env.PUBLIC_BASE_URL;
   const ALLOWED_USER_IDS = (process.env.ALLOWED_USER_ID || "")
     .split(",")
@@ -32,26 +25,32 @@ module.exports = async (req, res) => {
   const chatId = message.chat.id;
   const fromId = String((message.from && message.from.id) || "");
 
+  // بررسی دسترسی
   if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
     await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
     res.status(200).json({ ok: true });
     return;
   }
 
-  // حالت ۱: این پیام، جواب به سوال "چه اسمی بذارم؟" هست
+  // حالت ۱: پاسخ به سوال "اسم فیلم چیه؟"
   const replyText = message.reply_to_message && message.reply_to_message.text;
   const refMatch = replyText && /\[ref:(\d+)\]/.exec(replyText);
 
   if (refMatch && message.text) {
-    const copiedId = parseInt(refMatch[1], 10);
-    const slug = sanitizeSlug(message.text) || `f${copiedId}`;
+    const channelMessageId = parseInt(refMatch[1], 10);
+    const slug = sanitizeSlug(message.text) || `f${channelMessageId}`;
 
     try {
       const db = await getDb();
       await db.collection("movies").updateOne(
         { name: slug },
         {
-          $set: { name: slug, messageId: copiedId, updatedAt: new Date() },
+          $set: { 
+            name: slug, 
+            channelUsername: CHANNEL_USERNAME, // ذخیره یوزرنیم
+            messageId: channelMessageId, 
+            updatedAt: new Date() 
+          },
           $setOnInsert: { createdAt: new Date() },
         },
         { upsert: true }
@@ -61,35 +60,53 @@ module.exports = async (req, res) => {
       await sendMessage(
         BOT_TOKEN,
         chatId,
-        `لینک آماده شد:\n${link}\n\nلیست همه فیلم‌ها:\n${BASE_URL}/movies.html`
+        `✅ لینک آماده شد:\n${link}\n\n📋 لیست همه فیلم‌ها:\n${BASE_URL}/movies.html`
       );
     } catch (err) {
       console.error(err);
-      await sendMessage(BOT_TOKEN, chatId, "یه مشکلی پیش اومد، دوباره امتحان کن.");
+      await sendMessage(BOT_TOKEN, chatId, "❌ یه مشکلی پیش اومد، دوباره امتحان کن.");
     }
 
     res.status(200).json({ ok: true });
     return;
   }
 
-  // حالت ۲: یه فایل جدید رسیده
+  // حالت ۲: فایل جدید
   const hasFile = message.document || message.video || message.audio;
 
   if (!hasFile) {
-    await sendMessage(BOT_TOKEN, chatId, "یه فایل ویدیویی یا فیلم برام بفرست تا لینک پخشش رو بدم.");
+    await sendMessage(BOT_TOKEN, chatId, "📁 یه فایل ویدیویی یا فیلم برام بفرست.");
     res.status(200).json({ ok: true });
     return;
   }
 
   try {
-    const copied = await copyMessage(BOT_TOKEN, RELAY_CHAT_ID, chatId, message.message_id);
-    if (!copied.ok) throw new Error(JSON.stringify(copied));
+    console.log("[bot] Forwarding to channel:", CHANNEL_USERNAME);
+    
+    // ارسال به کانال با یوزرنیم
+    const forward = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: CHANNEL_USERNAME, // ← فقط یوزرنیم
+        from_chat_id: chatId,
+        message_id: message.message_id,
+      }),
+    });
+    
+    const result = await forward.json();
+    
+    if (!result.ok) {
+      throw new Error(result.description || "Unknown error");
+    }
 
-    const copiedId = copied.result.message_id;
-    await askForSlug(BOT_TOKEN, chatId, copiedId);
+    const channelMessageId = result.result.message_id;
+    console.log("[bot] ✅ Message forwarded. ID:", channelMessageId);
+    
+    await askForSlug(BOT_TOKEN, chatId, channelMessageId);
   } catch (err) {
-    console.error(err);
-    await sendMessage(BOT_TOKEN, chatId, "یه مشکلی پیش اومد. مطمئن شو اکانت رله یه بار /start رو به این بات زده. دوباره امتحان کن.");
+    console.error("[bot] ❌ Error:", err);
+    await sendMessage(BOT_TOKEN, chatId, "❌ خطا در ارسال به کانال. مطمئن شوید بات به کانال اضافه شده است.");
   }
 
   res.status(200).json({ ok: true });
@@ -113,27 +130,14 @@ async function sendMessage(token, chatId, text) {
   return r.json();
 }
 
-async function askForSlug(token, chatId, copiedId) {
+async function askForSlug(token, chatId, channelMessageId) {
   await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       chat_id: chatId,
-      text: `اسم این فیلم چی باشه؟ (فقط حروف/عدد انگلیسی، بدون فاصله)\n[ref:${copiedId}]`,
+      text: `🎬 اسم این فیلم چی باشه؟ (فقط حروف/عدد انگلیسی، بدون فاصله)\n[ref:${channelMessageId}]`,
       reply_markup: { force_reply: true },
     }),
   });
-}
-
-async function copyMessage(token, toChatId, fromChatId, messageId) {
-  const r = await fetch(`https://api.telegram.org/bot${token}/copyMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: toChatId,
-      from_chat_id: fromChatId,
-      message_id: messageId,
-    }),
-  });
-  return r.json();
 }
