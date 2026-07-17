@@ -33,7 +33,6 @@
     justify-content: center;
   }
 
-  /* ===== ویدیو - بدون کنترل پیش‌فرض ===== */
   #player {
     width: 100%;
     height: 100%;
@@ -131,7 +130,7 @@
     opacity: 1;
   }
 
-  /* ===== دکمه‌ها ===== */
+  /* ===== دکمه‌های وسط ===== */
   .buttons {
     display: flex;
     align-items: center;
@@ -183,40 +182,54 @@
     fill: white;
   }
 
-  /* ===== دکمه‌های سمت راست (صدا، ۳ نقطه، تمام صفحه) ===== */
+  /* ===== دکمه‌های راست (صدا و تمام صفحه) ===== 
+         پایین‌تر از قبل
+  ===== */
   .right-buttons {
     position: absolute;
     right: 20px;
-    bottom: 95px;
+    bottom: 155px; /* ← قبلاً 95px بود، حالا 155px (پایین‌تر) */
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
     z-index: 11;
     direction: ltr;
+    transition: opacity 0.4s ease;
+    opacity: 0;
+  }
+
+  .right-buttons.visible {
+    opacity: 1;
   }
 
   .right-buttons .btn-icon {
-    background: rgba(255,255,255,0.05);
+    background: rgba(255,255,255,0.08);
     border: none;
     color: #fff;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.1s;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.05);
   }
 
   .right-buttons .btn-icon:hover {
     background: rgba(255,255,255,0.15);
   }
 
+  .right-buttons .btn-icon:active {
+    transform: scale(0.9);
+  }
+
   .right-buttons .btn-icon svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
     fill: white;
   }
 
@@ -378,16 +391,15 @@
     }
     .right-buttons {
       right: 12px;
-      bottom: 80px;
+      bottom: 130px;
     }
     .right-buttons .btn-icon {
-      width: 30px;
-      height: 30px;
-      font-size: 14px;
+      width: 34px;
+      height: 34px;
     }
     .right-buttons .btn-icon svg {
-      width: 15px;
-      height: 15px;
+      width: 17px;
+      height: 17px;
     }
   }
 
@@ -427,7 +439,7 @@
     <div class="film-name" id="filmName">فیلم</div>
   </div>
 
-  <!-- ===== دکمه‌های سمت راست (صدا، ۳ نقطه، تمام صفحه) ===== -->
+  <!-- ===== دکمه‌های سمت راست (صدا و تمام صفحه) پایین‌تر ===== -->
   <div class="right-buttons" id="rightButtons">
     <!-- دکمه صدا -->
     <button class="btn-icon" id="btnMute" title="صدا">
@@ -458,17 +470,14 @@
     </div>
 
     <div class="buttons">
-      <!-- عقب ۱۰ ثانیه -->
       <button class="btn btn-skip" id="btnSkipBack" title="۱۰ ثانیه عقب">
         <svg viewBox="0 0 24 24">
           <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
         </svg>
       </button>
 
-      <!-- پخش/توقف -->
       <button class="btn btn-play" id="btnPlay">▶</button>
 
-      <!-- جلو ۱۰ ثانیه -->
       <button class="btn btn-skip" id="btnSkipForward" title="۱۰ ثانیه جلو">
         <svg viewBox="0 0 24 24">
           <path d="M13 18V6l8.5 6-8.5 6zm-.5-6l-8.5-6v12l8.5-6z"/>
@@ -506,6 +515,7 @@ const btnSkipBack = document.getElementById('btnSkipBack');
 const btnSkipForward = document.getElementById('btnSkipForward');
 const btnMute = document.getElementById('btnMute');
 const btnFullscreen = document.getElementById('btnFullscreen');
+const rightButtons = document.getElementById('rightButtons');
 const centerStatus = document.getElementById('centerStatus');
 const errorOverlay = document.getElementById('errorOverlay');
 const errorText = document.getElementById('errorText');
@@ -633,177 +643,4 @@ btnMute.addEventListener('click', () => {
   `;
 });
 
-// ============================================================
-// 🖥️ دکمه تمام صفحه
-// ============================================================
-btnFullscreen.addEventListener('click', () => {
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  } else {
-    container.requestFullscreen?.();
-  }
-});
-
-document.addEventListener('fullscreenchange', () => {
-  btnFullscreen.innerHTML = document.fullscreenElement ? `
-    <svg viewBox="0 0 24 24">
-      <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
-    </svg>
-  ` : `
-    <svg viewBox="0 0 24 24">
-      <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-    </svg>
-  `;
-});
-
-// ============================================================
-// 🎮 نمایش/مخفی کردن کنترل‌ها
-// ============================================================
-function showControls() {
-  controls.classList.add('visible');
-  document.getElementById('rightButtons').style.opacity = '1';
-  isControlsVisible = true;
-  clearTimeout(controlsTimeout);
-  controlsTimeout = setTimeout(() => {
-    hideControls();
-  }, 4000);
-}
-
-function hideControls() {
-  if (centerStatus.classList.contains('hidden')) {
-    controls.classList.remove('visible');
-    document.getElementById('rightButtons').style.opacity = '0';
-    isControlsVisible = false;
-  }
-}
-
-// تنظیم opacity برای دکمه‌های راست
-document.getElementById('rightButtons').style.transition = 'opacity 0.4s ease';
-document.getElementById('rightButtons').style.opacity = '0';
-
-container.addEventListener('click', (e) => {
-  if (e.target.closest('.controls') || e.target.closest('.topbar') || e.target.closest('.right-buttons')) return;
-  if (errorOverlay.classList.contains('show')) return;
-  
-  if (isControlsVisible) {
-    hideControls();
-  } else {
-    showControls();
-  }
-});
-
-container.addEventListener('mousemove', () => {
-  if (!errorOverlay.classList.contains('show')) {
-    showControls();
-  }
-});
-
-container.addEventListener('touchstart', () => {
-  if (!errorOverlay.classList.contains('show')) {
-    showControls();
-  }
-});
-
-setTimeout(showControls, 1000);
-
-// ============================================================
-// 🔄 مدیریت بافر
-// ============================================================
-video.addEventListener('waiting', () => {
-  centerStatus.classList.remove('hidden');
-  centerStatus.querySelector('.loading-text').textContent = 'در حال بارگیری ...';
-});
-
-video.addEventListener('canplay', () => {
-  centerStatus.classList.add('hidden');
-});
-
-video.addEventListener('playing', () => {
-  centerStatus.classList.add('hidden');
-});
-
-// ============================================================
-// ❌ مدیریت خطا
-// ============================================================
-function showError(msg) {
-  errorOverlay.classList.add('show');
-  errorText.textContent = msg || 'مشکلی در پخش فیلم پیش آمد.';
-  controls.classList.remove('visible');
-  document.getElementById('rightButtons').style.opacity = '0';
-  centerStatus.classList.add('hidden');
-}
-
-function hideError() {
-  errorOverlay.classList.remove('show');
-}
-
-btnRetry.addEventListener('click', () => {
-  hideError();
-  retryCount = 0;
-  loadVideo();
-});
-
-video.addEventListener('error', (e) => {
-  console.error('Video error:', e);
-  
-  const errorCode = video.error?.code;
-  
-  if (errorCode === 2 && retryCount < MAX_RETRY) {
-    retryCount++;
-    console.log(`🔄 تلاش مجدد ${retryCount}/${MAX_RETRY}...`);
-    centerStatus.classList.remove('hidden');
-    centerStatus.querySelector('.loading-text').textContent = `🔄 تلاش مجدد (${retryCount}/${MAX_RETRY})...`;
-    
-    setTimeout(() => {
-      video.load();
-      video.play();
-    }, 2000);
-    return;
-  }
-  
-  showError('این فیلم پیدا نشد یا پخشش با مشکل مواجه شد.');
-});
-
-video.addEventListener('stalled', () => {
-  console.log('⚠️ پخش متوقف شد، تلاش مجدد...');
-  if (!video.paused) {
-    video.play();
-  }
-});
-
-// ============================================================
-// ⌨️ کیبورد شورت‌کات
-// ============================================================
-document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  
-  switch(e.key) {
-    case ' ':
-      e.preventDefault();
-      togglePlay();
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      video.currentTime = Math.min(video.duration, video.currentTime + 10);
-      break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      video.currentTime = Math.max(0, video.currentTime - 10);
-      break;
-    case 'f':
-    case 'F':
-      btnFullscreen.click();
-      break;
-    case 'm':
-    case 'M':
-      btnMute.click();
-      break;
-  }
-});
-
-console.log('🎬 Player loaded successfully!');
-console.log(`📺 Film: ${id}`);
-</script>
-
-</body>
-</html>
+// ===========================================================
