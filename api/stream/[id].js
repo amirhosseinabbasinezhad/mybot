@@ -4,6 +4,7 @@
 
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
+const bigInt = require("big-integer");
 
 module.exports.config = {
   api: { bodyParser: false, responseLimit: false },
@@ -78,7 +79,7 @@ module.exports = async (req, res) => {
 
     const iter = client.iterDownload({
       file: message.media,
-      offset: BigInt(start),
+      offset: bigInt(start),
       limit: end - start + 1,
     });
 
