@@ -1,6 +1,8 @@
 {
   "functions": {
-    "api/stream/[id].js": { "maxDuration": 60 },
-    "api/bot.js": { "maxDuration": 30 }
+    "api/stream/[id].js": {
+      "maxDuration": 60,
+      "memory": 1024
+    }
   }
 }

@@ -62,13 +62,13 @@
     pointer-events: auto;
   }
 
-  /* ===== نوار پیشرفت - درست شده ===== */
+  /* ===== نوار پیشرفت ===== */
   .progress-container {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
-    direction: ltr; /* ← چپ‌چین کردن کل کانتینر */
+    direction: ltr;
   }
 
   .time-current,
@@ -77,7 +77,7 @@
     color: #aaa;
     min-width: 45px;
     font-variant-numeric: tabular-nums;
-    direction: ltr; /* ← اعداد چپ‌چین */
+    direction: ltr;
   }
 
   .progress-bar {
@@ -88,7 +88,7 @@
     position: relative;
     cursor: pointer;
     transition: height 0.2s;
-    direction: ltr; /* ← چپ‌چین کردن نوار */
+    direction: ltr;
   }
 
   .progress-bar:hover {
@@ -136,7 +136,7 @@
     align-items: center;
     justify-content: center;
     gap: 16px;
-    direction: ltr; /* ← دکمه‌ها چپ‌چین */
+    direction: ltr;
   }
 
   .btn {
@@ -176,14 +176,25 @@
     background: rgba(255,255,255,0.15);
   }
 
-  .btn-skip {
-    font-size: 20px;
+  .btn-skip svg {
+    width: 28px;
+    height: 28px;
+    fill: white;
   }
 
-  .btn-skip svg {
-    width: 24px;
-    height: 24px;
-    fill: white;
+  /* ===== نمایش حجم دانلود ===== */
+  .download-info {
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    color: #888;
+    font-size: 12px;
+    z-index: 5;
+    background: rgba(0,0,0,0.5);
+    padding: 6px 12px;
+    border-radius: 6px;
+    direction: ltr;
+    font-variant-numeric: tabular-nums;
   }
 
   /* ===== وضعیت بارگذاری ===== */
@@ -334,13 +345,19 @@
       font-size: 26px;
     }
     .btn-skip svg {
-      width: 20px;
-      height: 20px;
+      width: 22px;
+      height: 22px;
     }
     .time-current,
     .time-duration {
       font-size: 10px;
       min-width: 35px;
+    }
+    .download-info {
+      font-size: 10px;
+      top: 60px;
+      right: 10px;
+      padding: 4px 10px;
     }
   }
 
@@ -359,7 +376,19 @@
 
 <div class="player-container" id="container">
   
-  <video id="player" playsinline></video>
+  <video 
+    id="player" 
+    controls 
+    autoplay 
+    playsinline
+    preload="metadata"
+    crossorigin="anonymous"
+  ></video>
+
+  <!-- نمایش حجم دانلود -->
+  <div class="download-info">
+    📥 <span id="downloadSize">0</span> MB
+  </div>
 
   <div class="center-status" id="centerStatus">
     <div class="spinner"></div>
@@ -384,20 +413,17 @@
     </div>
 
     <div class="buttons">
-      <!-- دکمه عقب (چپ) -->
       <button class="btn btn-skip" id="btnSkipBack" title="۱۰ ثانیه عقب">
         <svg viewBox="0 0 24 24">
           <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
         </svg>
       </button>
 
-      <!-- دکمه پخش/توقف -->
       <button class="btn btn-play" id="btnPlay">▶</button>
 
-      <!-- دکمه جلو (راست) -->
       <button class="btn btn-skip" id="btnSkipForward" title="۱۰ ثانیه جلو">
-        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:xlink="http://www.w3.org/1999/xlink" transform="matrix(-1,1.2246467991473532e-16,-1.2246467991473532e-16,-1,0,0)">
-          <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"></path>
+        <svg viewBox="0 0 24 24">
+          <path d="M13 18V6l8.5 6-8.5 6zm-.5-6l-8.5-6v12l8.5-6z"/>
         </svg>
       </button>
     </div>
@@ -414,7 +440,7 @@
 
 <script>
 // ============================================================
-// 🎬 PLAYER CUSTOM - با دکمه‌های ۱۰ ثانیه و کنترل کامل
+// 🎬 PLAYER با نمایش حجم دانلود
 // ============================================================
 
 const video = document.getElementById('player');
@@ -434,6 +460,7 @@ const errorOverlay = document.getElementById('errorOverlay');
 const errorText = document.getElementById('errorText');
 const btnRetry = document.getElementById('btnRetry');
 const filmName = document.getElementById('filmName');
+const downloadSize = document.getElementById('downloadSize');
 
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
@@ -449,7 +476,11 @@ let controlsTimeout = null;
 let isControlsVisible = false;
 let retryCount = 0;
 const MAX_RETRY = 3;
+let totalBytes = 0;
 
+// ============================================================
+// 🎯 بارگذاری فیلم
+// ============================================================
 function loadVideo() {
   video.src = `/api/stream/${encodeURIComponent(id)}`;
   video.load();
@@ -459,6 +490,9 @@ function loadVideo() {
 
 loadVideo();
 
+// ============================================================
+// ⏱️ تبدیل زمان
+// ============================================================
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds < 0) return '00:00';
   const m = Math.floor(seconds / 60);
@@ -466,6 +500,9 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+// ============================================================
+// 📊 آپدیت نوار پیشرفت و حجم دانلود
+// ============================================================
 function updateProgress() {
   if (!video.duration) return;
   
@@ -474,16 +511,25 @@ function updateProgress() {
   timeCurrent.textContent = formatTime(video.currentTime);
   timeDuration.textContent = formatTime(video.duration);
 
+  // بافر
   if (video.buffered.length > 0) {
     const bufferedEnd = video.buffered.end(video.buffered.length - 1);
     const bufferPercent = (bufferedEnd / video.duration) * 100;
     progressBuffer.style.width = bufferPercent + '%';
+    
+    // 🔥 نمایش حجم دانلود شده
+    totalBytes = Math.max(totalBytes, bufferedEnd);
+    const mb = (totalBytes / (1024 * 1024)).toFixed(1);
+    downloadSize.textContent = mb;
   }
 }
 
 video.addEventListener('timeupdate', updateProgress);
 video.addEventListener('progress', updateProgress);
 
+// ============================================================
+// ▶️ دکمه پخش/توقف
+// ============================================================
 function togglePlay() {
   if (video.paused) {
     video.play();
@@ -505,7 +551,9 @@ video.addEventListener('pause', () => {
   btnPlay.textContent = '▶';
 });
 
-// ===== دکمه‌های جلو و عقب =====
+// ============================================================
+// ⏪ ⏩ دکمه‌های ۱۰ ثانیه
+// ============================================================
 btnSkipBack.addEventListener('click', () => {
   video.currentTime = Math.max(0, video.currentTime - SKIP_SECONDS);
 });
@@ -514,14 +562,18 @@ btnSkipForward.addEventListener('click', () => {
   video.currentTime = Math.min(video.duration, video.currentTime + SKIP_SECONDS);
 });
 
-// ===== کلیک روی نوار پیشرفت =====
+// ============================================================
+// 📍 کلیک روی نوار پیشرفت
+// ============================================================
 progressBar.addEventListener('click', (e) => {
   const rect = progressBar.getBoundingClientRect();
   const x = (e.clientX - rect.left) / rect.width;
   video.currentTime = x * video.duration;
 });
 
-// ===== نمایش/مخفی کردن کنترل‌ها =====
+// ============================================================
+// 🎮 نمایش/مخفی کردن کنترل‌ها
+// ============================================================
 function showControls() {
   controls.classList.add('visible');
   isControlsVisible = true;
@@ -563,10 +615,12 @@ container.addEventListener('touchstart', () => {
 
 setTimeout(showControls, 1000);
 
-// ===== مدیریت بافر =====
+// ============================================================
+// 🔄 مدیریت بافر
+// ============================================================
 video.addEventListener('waiting', () => {
   centerStatus.classList.remove('hidden');
-  centerStatus.querySelector('.loading-text').textContent = 'در حال بارگیری ...';
+  centerStatus.querySelector('.loading-text').textContent = '⏳ در حال بافر...';
 });
 
 video.addEventListener('canplay', () => {
@@ -577,7 +631,9 @@ video.addEventListener('playing', () => {
   centerStatus.classList.add('hidden');
 });
 
-// ===== مدیریت خطا =====
+// ============================================================
+// ❌ مدیریت خطا
+// ============================================================
 function showError(msg) {
   errorOverlay.classList.add('show');
   errorText.textContent = msg || 'مشکلی در پخش فیلم پیش آمد.';
@@ -592,6 +648,8 @@ function hideError() {
 btnRetry.addEventListener('click', () => {
   hideError();
   retryCount = 0;
+  totalBytes = 0;
+  downloadSize.textContent = '0';
   loadVideo();
 });
 
@@ -623,7 +681,9 @@ video.addEventListener('stalled', () => {
   }
 });
 
-// ===== کیبورد شورت‌کات =====
+// ============================================================
+// ⌨️ کیبورد شورت‌کات
+// ============================================================
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   
@@ -651,7 +711,9 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ===== دابل کلیک برای تمام صفحه =====
+// ============================================================
+// 🖥️ دابل کلیک تمام صفحه
+// ============================================================
 video.addEventListener('dblclick', () => {
   if (document.fullscreenElement) {
     document.exitFullscreen();
