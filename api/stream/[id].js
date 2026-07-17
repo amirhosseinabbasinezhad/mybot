@@ -41,6 +41,7 @@ module.exports = async (req, res) => {
     const doc = message.media.document;
     const fileSize = Number(doc.size);
     const mimeType = doc.mimeType || "video/mp4";
+    const CHUNK_SIZE = 6 * 1024 * 1024; // 6 مگابایت به ازای هر درخواست
 
     let start = 0;
     let end = fileSize - 1;
@@ -54,7 +55,14 @@ module.exports = async (req, res) => {
       }
     }
 
-    res.writeHead(range ? 206 : 200, {
+    // هر درخواست رو به یه تکه کوچیک محدود می‌کنیم تا زودتر از سقف زمانی تابع تموم بشه.
+    // پلیر ویدیو خودش تکه بعدی رو با یه درخواست جدید می‌گیره.
+    if (end - start + 1 > CHUNK_SIZE) {
+      end = start + CHUNK_SIZE - 1;
+    }
+    if (end > fileSize - 1) end = fileSize - 1;
+
+    res.writeHead(206, {
       "Content-Type": mimeType,
       "Content-Length": end - start + 1,
       "Content-Range": `bytes ${start}-${end}/${fileSize}`,
