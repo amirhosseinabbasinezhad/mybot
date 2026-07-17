@@ -33,7 +33,6 @@
     justify-content: center;
   }
 
-  /* ===== ویدیو ===== */
   #player {
     width: 100%;
     height: 100%;
@@ -42,7 +41,7 @@
     display: block;
   }
 
-  /* ===== کنترل‌های پایین ===== */
+  /* ===== کنترل‌ها ===== */
   .controls {
     position: absolute;
     bottom: 0;
@@ -63,19 +62,22 @@
     pointer-events: auto;
   }
 
-  /* ===== نوار پیشرفت ===== */
+  /* ===== نوار پیشرفت - درست شده ===== */
   .progress-container {
     display: flex;
     align-items: center;
     gap: 12px;
     margin-bottom: 12px;
+    direction: ltr; /* ← چپ‌چین کردن کل کانتینر */
   }
 
-  .time-current, .time-duration {
+  .time-current,
+  .time-duration {
     font-size: 12px;
     color: #aaa;
     min-width: 45px;
     font-variant-numeric: tabular-nums;
+    direction: ltr; /* ← اعداد چپ‌چین */
   }
 
   .progress-bar {
@@ -86,6 +88,7 @@
     position: relative;
     cursor: pointer;
     transition: height 0.2s;
+    direction: ltr; /* ← چپ‌چین کردن نوار */
   }
 
   .progress-bar:hover {
@@ -133,6 +136,7 @@
     align-items: center;
     justify-content: center;
     gap: 16px;
+    direction: ltr; /* ← دکمه‌ها چپ‌چین */
   }
 
   .btn {
@@ -182,7 +186,7 @@
     fill: white;
   }
 
-  /* ===== وضعیت بارگذاری وسط صفحه ===== */
+  /* ===== وضعیت بارگذاری ===== */
   .center-status {
     position: absolute;
     top: 50%;
@@ -275,7 +279,7 @@
     margin-top: 12px;
   }
 
-  /* ===== تاپ بار (اسم فیلم) ===== */
+  /* ===== تاپ بار ===== */
   .topbar {
     position: absolute;
     top: 0;
@@ -314,7 +318,6 @@
     max-width: 80%;
   }
 
-  /* ===== واکنش‌گرایی ===== */
   @media (max-width: 600px) {
     .controls {
       padding: 12px 12px 20px;
@@ -334,13 +337,13 @@
       width: 20px;
       height: 20px;
     }
-    .time-current, .time-duration {
+    .time-current,
+    .time-duration {
       font-size: 10px;
       min-width: 35px;
     }
   }
 
-  /* ===== حالت تمام صفحه ===== */
   :-webkit-full-screen .controls {
     padding-bottom: 40px;
   }
@@ -356,24 +359,19 @@
 
 <div class="player-container" id="container">
   
-  <!-- ویدیو -->
   <video id="player" playsinline></video>
 
-  <!-- بارگذاری وسط -->
   <div class="center-status" id="centerStatus">
     <div class="spinner"></div>
     <div class="loading-text">در حال بارگذاری...</div>
   </div>
 
-  <!-- تاپ بار -->
   <div class="topbar" id="topbar">
     <a href="/movies.html">‹ برگشت</a>
     <div class="film-name" id="filmName">فیلم</div>
   </div>
 
-  <!-- کنترل‌ها -->
   <div class="controls" id="controls">
-    <!-- نوار پیشرفت -->
     <div class="progress-container">
       <span class="time-current" id="timeCurrent">00:00</span>
       <div class="progress-bar" id="progressBar">
@@ -385,21 +383,26 @@
       <span class="time-duration" id="timeDuration">00:00</span>
     </div>
 
-    <!-- دکمه‌ها -->
     <div class="buttons">
+      <!-- دکمه عقب (چپ) -->
       <button class="btn btn-skip" id="btnSkipBack" title="۱۰ ثانیه عقب">
-        <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
+        <svg viewBox="0 0 24 24">
+          <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
+        </svg>
       </button>
 
+      <!-- دکمه پخش/توقف -->
       <button class="btn btn-play" id="btnPlay">▶</button>
 
+      <!-- دکمه جلو (راست) -->
       <button class="btn btn-skip" id="btnSkipForward" title="۱۰ ثانیه جلو">
-        <svg viewBox="0 0 24 24"><path d="M13 18V6l8.5 6-8.5 6zm-9.5-6l8.5-6v12l-8.5-6z"/></svg>
+        <svg viewBox="0 0 24 24">
+          <path d="M13 18V6l8.5 6-8.5 6zm-9.5-6l8.5-6v12l-8.5-6z"/>
+        </svg>
       </button>
     </div>
   </div>
 
-  <!-- خطا -->
   <div class="error-overlay" id="errorOverlay">
     <h3>⚠️ خطا در پخش</h3>
     <p id="errorText">مشکلی در پخش فیلم پیش آمد.</p>
@@ -417,7 +420,6 @@
 const video = document.getElementById('player');
 const container = document.getElementById('container');
 
-// المان‌ها
 const controls = document.getElementById('controls');
 const progressBar = document.getElementById('progressBar');
 const progressFill = document.getElementById('progressFill');
@@ -433,9 +435,6 @@ const errorText = document.getElementById('errorText');
 const btnRetry = document.getElementById('btnRetry');
 const filmName = document.getElementById('filmName');
 
-// ============================================================
-// 📥 دریافت اطلاعات فیلم
-// ============================================================
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 
@@ -445,18 +444,12 @@ if (!id) {
 
 filmName.textContent = decodeURIComponent(id || 'فیلم');
 
-// ============================================================
-// 🎯 تنظیمات
-// ============================================================
 const SKIP_SECONDS = 10;
 let controlsTimeout = null;
 let isControlsVisible = false;
 let retryCount = 0;
 const MAX_RETRY = 3;
 
-// ============================================================
-// 🔗 بارگذاری فیلم
-// ============================================================
 function loadVideo() {
   video.src = `/api/stream/${encodeURIComponent(id)}`;
   video.load();
@@ -466,9 +459,6 @@ function loadVideo() {
 
 loadVideo();
 
-// ============================================================
-// ⏱️ تبدیل زمان
-// ============================================================
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds < 0) return '00:00';
   const m = Math.floor(seconds / 60);
@@ -476,9 +466,6 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// ============================================================
-// 📊 آپدیت نوار پیشرفت
-// ============================================================
 function updateProgress() {
   if (!video.duration) return;
   
@@ -487,7 +474,6 @@ function updateProgress() {
   timeCurrent.textContent = formatTime(video.currentTime);
   timeDuration.textContent = formatTime(video.duration);
 
-  // بافر
   if (video.buffered.length > 0) {
     const bufferedEnd = video.buffered.end(video.buffered.length - 1);
     const bufferPercent = (bufferedEnd / video.duration) * 100;
@@ -498,9 +484,6 @@ function updateProgress() {
 video.addEventListener('timeupdate', updateProgress);
 video.addEventListener('progress', updateProgress);
 
-// ============================================================
-// ▶️ دکمه پخش/توقف
-// ============================================================
 function togglePlay() {
   if (video.paused) {
     video.play();
@@ -522,9 +505,7 @@ video.addEventListener('pause', () => {
   btnPlay.textContent = '▶';
 });
 
-// ============================================================
-// ⏪ ⏩ دکمه‌های ۱۰ ثانیه
-// ============================================================
+// ===== دکمه‌های جلو و عقب =====
 btnSkipBack.addEventListener('click', () => {
   video.currentTime = Math.max(0, video.currentTime - SKIP_SECONDS);
 });
@@ -533,18 +514,14 @@ btnSkipForward.addEventListener('click', () => {
   video.currentTime = Math.min(video.duration, video.currentTime + SKIP_SECONDS);
 });
 
-// ============================================================
-// 📍 کلیک روی نوار پیشرفت (Seek)
-// ============================================================
+// ===== کلیک روی نوار پیشرفت =====
 progressBar.addEventListener('click', (e) => {
   const rect = progressBar.getBoundingClientRect();
   const x = (e.clientX - rect.left) / rect.width;
   video.currentTime = x * video.duration;
 });
 
-// ============================================================
-// 🎮 نمایش/مخفی کردن کنترل‌ها
-// ============================================================
+// ===== نمایش/مخفی کردن کنترل‌ها =====
 function showControls() {
   controls.classList.add('visible');
   isControlsVisible = true;
@@ -555,16 +532,13 @@ function showControls() {
 }
 
 function hideControls() {
-  // اگر ویدیو در حال بارگذاری هست، مخفی نکن
   if (centerStatus.classList.contains('hidden')) {
     controls.classList.remove('visible');
     isControlsVisible = false;
   }
 }
 
-// کلیک روی صفحه برای نمایش کنترل‌ها
 container.addEventListener('click', (e) => {
-  // اگر روی کنترل‌ها کلیک شده، نادیده بگیر
   if (e.target.closest('.controls') || e.target.closest('.topbar')) return;
   if (errorOverlay.classList.contains('show')) return;
   
@@ -575,26 +549,21 @@ container.addEventListener('click', (e) => {
   }
 });
 
-// حرکت موس برای نمایش کنترل‌ها
 container.addEventListener('mousemove', () => {
   if (!errorOverlay.classList.contains('show')) {
     showControls();
   }
 });
 
-// لمس برای نمایش کنترل‌ها
 container.addEventListener('touchstart', () => {
   if (!errorOverlay.classList.contains('show')) {
     showControls();
   }
 });
 
-// نمایش اولیه کنترل‌ها
 setTimeout(showControls, 1000);
 
-// ============================================================
-// 🔄 مدیریت بافر (Loading)
-// ============================================================
+// ===== مدیریت بافر =====
 video.addEventListener('waiting', () => {
   centerStatus.classList.remove('hidden');
   centerStatus.querySelector('.loading-text').textContent = '⏳ در حال بافر...';
@@ -608,9 +577,7 @@ video.addEventListener('playing', () => {
   centerStatus.classList.add('hidden');
 });
 
-// ============================================================
-// ❌ مدیریت خطا با تلاش مجدد
-// ============================================================
+// ===== مدیریت خطا =====
 function showError(msg) {
   errorOverlay.classList.add('show');
   errorText.textContent = msg || 'مشکلی در پخش فیلم پیش آمد.';
@@ -633,7 +600,6 @@ video.addEventListener('error', (e) => {
   
   const errorCode = video.error?.code;
   
-  // MEDIA_ERR_NETWORK = 2
   if (errorCode === 2 && retryCount < MAX_RETRY) {
     retryCount++;
     console.log(`🔄 تلاش مجدد ${retryCount}/${MAX_RETRY}...`);
@@ -650,9 +616,6 @@ video.addEventListener('error', (e) => {
   showError('این فیلم پیدا نشد یا پخشش با مشکل مواجه شد.');
 });
 
-// ============================================================
-// 🔄 قطع شدن ناگهانی (Stall)
-// ============================================================
 video.addEventListener('stalled', () => {
   console.log('⚠️ پخش متوقف شد، تلاش مجدد...');
   if (!video.paused) {
@@ -660,9 +623,7 @@ video.addEventListener('stalled', () => {
   }
 });
 
-// ============================================================
-// ⌨️ کیبورد شورت‌کات
-// ============================================================
+// ===== کیبورد شورت‌کات =====
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   
@@ -690,9 +651,7 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// ============================================================
-// 🖥️ دکمه تمام صفحه (با دابل کلیک)
-// ============================================================
+// ===== دابل کلیک برای تمام صفحه =====
 video.addEventListener('dblclick', () => {
   if (document.fullscreenElement) {
     document.exitFullscreen();
@@ -701,9 +660,6 @@ video.addEventListener('dblclick', () => {
   }
 });
 
-// ============================================================
-// 🧹 پاک‌سازی
-// ============================================================
 console.log('🎬 Player loaded successfully!');
 console.log(`📺 Film: ${id}`);
 </script>
