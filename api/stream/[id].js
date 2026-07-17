@@ -1,7 +1,3 @@
-// این فانکشن با اکانت شخصی (Session String) به تلگرام وصل میشه و فایل رو
-// تیکه‌تیکه (بر اساس Range که مرورگر/تلویزیون درخواست می‌ده) استریم می‌کنه.
-// اسم فیلم رو تو MongoDB جستجو می‌کنه تا شناسه دقیق پیام رو پیدا کنه.
-
 const { TelegramClient, Api } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const bigInt = require("big-integer");
@@ -27,7 +23,7 @@ function getClient() {
 }
 
 module.exports = async (req, res) => {
-  const botUsername = process.env.RELAY_BOT_USERNAME;
+  const relayChatId = parseInt(process.env.RELAY_CHAT_ID, 10); // ← اضافه شد
   const requestedSlug = (req.query.id || "").toString().trim().toLowerCase();
 
   if (!requestedSlug) {
@@ -45,9 +41,9 @@ module.exports = async (req, res) => {
     }
 
     const client = await getClient();
-    const entity = await client.getEntity(botUsername);
+    // ← اصلاح: استفاده از RELAY_CHAT_ID به جای botUsername
+    const entity = await client.getEntity(relayChatId);
 
-    // روش ۱: مستقیم با شناسه (سریع‌تر، ولی گاهی جواب نمی‌ده)
     let message = null;
     try {
       const direct = await client.getMessages(entity, { ids: [movie.messageId] });
@@ -56,7 +52,6 @@ module.exports = async (req, res) => {
       console.log("[stream] روش مستقیم جواب نداد:", e.message);
     }
 
-    // روش ۲ (fallback): گشتن وسط لیست فایل‌ها
     if (!message) {
       console.log("[stream] رفتن سراغ روش fallback...");
       const recent = await client.getMessages(entity, {
@@ -74,7 +69,7 @@ module.exports = async (req, res) => {
     const doc = message.media.document;
     const fileSize = Number(doc.size);
     const mimeType = doc.mimeType || "video/mp4";
-    const CHUNK_SIZE = 6 * 1024 * 1024; // 6 مگابایت به ازای هر درخواست
+    const CHUNK_SIZE = 6 * 1024 * 1024;
 
     let start = 0;
     let end = fileSize - 1;
