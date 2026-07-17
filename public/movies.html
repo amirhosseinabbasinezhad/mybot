@@ -196,6 +196,8 @@
     gap: 4px;
     font-size: 12px;
     font-family: inherit;
+    min-width: 60px;
+    justify-content: center;
   }
 
   .btn-download:hover {
@@ -212,6 +214,11 @@
   .btn-download.downloading {
     color: #4caf50;
     cursor: wait;
+  }
+
+  .btn-download .progress-text {
+    font-size: 10px;
+    color: var(--gold);
   }
 
   .empty, .no-match {
@@ -242,6 +249,7 @@
     }
     .btn-download {
       padding: 8px 10px;
+      min-width: 40px;
     }
   }
 
@@ -287,39 +295,86 @@
   }
 
   // ============================================================
-  // 📥 تابع دانلود فیلم
+  // 📥 دانلود تکه‌تکه (Resumable Download)
   // ============================================================
-  function downloadMovie(movieName, button) {
-    const downloadUrl = `/api/stream/${encodeURIComponent(movieName)}`;
-
+  async function downloadMovie(movieName, button) {
+    const url = `/api/stream/${encodeURIComponent(movieName)}`;
+    
+    // غیرفعال کردن دکمه
+    button.disabled = true;
     button.classList.add('downloading');
-    button.innerHTML = '⏳';
+    button.innerHTML = '⏳ 0%';
 
-    fetch(downloadUrl)
-      .then(response => {
-        if (!response.ok) throw new Error('خطا در دانلود');
-        return response.blob();
-      })
-      .then(blob => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${movieName}.mp4`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        button.classList.remove('downloading');
+    try {
+      // 1. گرفتن حجم کل فیلم
+      const headResponse = await fetch(url, { method: 'HEAD' });
+      const totalSize = parseInt(headResponse.headers.get('content-length'), 10);
+      
+      if (!totalSize || totalSize === 0) {
+        throw new Error('حجم فیلم مشخص نیست');
+      }
+
+      console.log(`📥 شروع دانلود: ${(totalSize / 1024 / 1024).toFixed(1)} MB`);
+
+      // 2. دانلود تکه‌تکه با تکه‌های ۵ مگابایتی
+      const CHUNK_SIZE = 5 * 1024 * 1024; // 5 MB
+      let downloaded = 0;
+      const chunks = [];
+
+      while (downloaded < totalSize) {
+        const end = Math.min(downloaded + CHUNK_SIZE - 1, totalSize - 1);
+        
+        const response = await fetch(url, {
+          headers: { Range: `bytes=${downloaded}-${end}` }
+        });
+
+        if (!response.ok) {
+          throw new Error(`خطا در دانلود تکه: ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        chunks.push(blob);
+        downloaded += blob.size;
+
+        // نمایش پیشرفت
+        const percent = Math.round((downloaded / totalSize) * 100);
+        button.innerHTML = `⏳ ${percent}%`;
+        console.log(`📥 پیشرفت: ${percent}% (${(downloaded / 1024 / 1024).toFixed(1)}/${(totalSize / 1024 / 1024).toFixed(1)} MB)`);
+      }
+
+      // 3. ترکیب تکه‌ها
+      console.log('📦 ترکیب تکه‌ها...');
+      const finalBlob = new Blob(chunks, { type: 'video/mp4' });
+      
+      // 4. دانلود نهایی
+      const finalUrl = URL.createObjectURL(finalBlob);
+      const a = document.createElement('a');
+      a.href = finalUrl;
+      a.download = `${movieName}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // آزاد کردن حافظه
+      setTimeout(() => URL.revokeObjectURL(finalUrl), 5000);
+
+      console.log('✅ دانلود کامل شد!');
+      button.innerHTML = '✅ دانلود شد';
+      setTimeout(() => {
         button.innerHTML = downloadSvg() + ' <span>دانلود</span>';
-      })
-      .catch(err => {
-        console.error('Download error:', err);
+        button.disabled = false;
         button.classList.remove('downloading');
-        button.innerHTML = downloadSvg() + ' <span>خطا</span>';
-        setTimeout(() => {
-          button.innerHTML = downloadSvg() + ' <span>دانلود</span>';
-        }, 2000);
-      });
+      }, 3000);
+
+    } catch (err) {
+      console.error('❌ خطا در دانلود:', err);
+      button.innerHTML = '❌ خطا';
+      setTimeout(() => {
+        button.innerHTML = downloadSvg() + ' <span>دانلود</span>';
+        button.disabled = false;
+        button.classList.remove('downloading');
+      }, 3000);
+    }
   }
 
   function render(movies) {
