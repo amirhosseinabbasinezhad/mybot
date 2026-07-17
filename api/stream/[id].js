@@ -25,22 +25,16 @@ function getClient() {
 }
 
 module.exports = async (req, res) => {
-  const { id } = req.query;
   const botUsername = process.env.RELAY_BOT_USERNAME;
-
-  if (!id) {
-    res.status(400).send("شناسه فایل مشخص نیست");
-    return;
-  }
 
   try {
     const client = await getClient();
     const entity = await client.getEntity(botUsername);
-    const messages = await client.getMessages(entity, { ids: [parseInt(id, 10)] });
-    const message = messages && messages[0];
+    const recent = await client.getMessages(entity, { limit: 30 });
+    const message = recent.find((m) => m.media && m.media.document);
 
-    if (!message || !message.media || !message.media.document) {
-      res.status(404).send("فایل پیدا نشد");
+    if (!message) {
+      res.status(404).send("هیچ فیلمی پیدا نشد. اول یه فایل به بات بفرست.");
       return;
     }
 
