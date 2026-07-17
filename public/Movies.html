@@ -3,59 +3,280 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>لیست فیلم‌ها</title>
+<title>فیلم‌ها</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
+  :root {
+    --bg: #0b0c10;
+    --bg-soft: #131419;
+    --card: #191a20;
+    --card-hover: #212229;
+    --gold: #e0a94a;
+    --gold-dim: #8a6a34;
+    --velvet: #7a2634;
+    --text: #f3efe6;
+    --text-muted: #8d8b86;
+    --border: #26272e;
+  }
+
+  * { box-sizing: border-box; }
+
   body {
     margin: 0;
-    padding: 24px;
-    background: #111;
-    color: #eee;
-    font-family: Tahoma, sans-serif;
     min-height: 100vh;
+    background:
+      radial-gradient(1100px 500px at 20% -10%, rgba(224, 169, 74, 0.08), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(122, 38, 52, 0.10), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: "Vazirmatn", Tahoma, sans-serif;
+    padding: 28px 20px 60px;
   }
-  h1 { font-size: 22px; margin-bottom: 20px; }
-  ul { list-style: none; padding: 0; margin: 0; }
-  li {
-    margin-bottom: 12px;
+
+  header {
+    max-width: 720px;
+    margin: 0 auto 28px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
   }
-  a {
-    display: block;
-    padding: 16px;
-    background: #1e1e1e;
-    border-radius: 10px;
-    color: #fff;
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: linear-gradient(155deg, var(--gold), var(--gold-dim));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    color: #14120a;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  h1 {
+    font-size: 21px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .count {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .search-wrap {
+    max-width: 720px;
+    margin: 0 auto 22px;
+    position: relative;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  #search {
+    width: 100%;
+    padding: 14px 46px 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+
+  #search::placeholder { color: var(--text-muted); }
+
+  #search:focus {
+    border-color: var(--gold-dim);
+    background: #16171d;
+  }
+
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 10px;
+  }
+
+  li a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
     text-decoration: none;
-    font-size: 18px;
+    transition: background 0.15s ease, transform 0.1s ease, border-color 0.15s ease;
   }
-  a:active, a:hover { background: #2a2a2a; }
-  .empty { color: #888; }
+
+  li a:hover, li a:focus-visible {
+    background: var(--card-hover);
+    border-color: var(--gold-dim);
+    outline: none;
+  }
+
+  li a:active { transform: scale(0.99); }
+
+  .poster {
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    flex-shrink: 0;
+    background: linear-gradient(155deg, var(--velvet), #3c1119);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .title { font-size: 16px; font-weight: 600; flex: 1; min-width: 0; }
+  .title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .go {
+    color: var(--gold);
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .empty, .no-match {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .empty svg, .no-match svg { opacity: 0.35; margin-bottom: 14px; }
+
+  .skeleton {
+    height: 60px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, var(--card) 0%, var(--card-hover) 50%, var(--card) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.3s ease-in-out infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton { animation: none; }
+  }
 </style>
 </head>
 <body>
-  <h1>فیلم‌ها</h1>
-  <ul id="list"><li class="empty">در حال بارگذاری...</li></ul>
-  <script>
-    fetch("/api/movies")
-      .then((r) => r.json())
-      .then((movies) => {
-        const list = document.getElementById("list");
-        list.innerHTML = "";
-        if (!movies.length) {
-          list.innerHTML = '<li class="empty">هنوز فیلمی اضافه نشده.</li>';
-          return;
-        }
-        movies.forEach((m) => {
-          const li = document.createElement("li");
-          const a = document.createElement("a");
-          a.href = "/watch.html?id=" + encodeURIComponent(m.name);
-          a.textContent = m.name;
-          li.appendChild(a);
-          list.appendChild(li);
-        });
-      })
-      .catch(() => {
-        document.getElementById("list").innerHTML = '<li class="empty">خطا در بارگذاری لیست.</li>';
-      });
-  </script>
+
+<header>
+  <div class="brand">
+    <div class="brand-mark">۲۴</div>
+    <h1>فیلم‌ها</h1>
+  </div>
+  <span class="count" id="count"></span>
+</header>
+
+<div class="search-wrap">
+  <input id="search" type="text" placeholder="اسم فیلم رو جستجو کن…" autocomplete="off" />
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>
+  </svg>
+</div>
+
+<main>
+  <ul id="list">
+    <li><div class="skeleton"></div></li>
+    <li><div class="skeleton"></div></li>
+    <li><div class="skeleton"></div></li>
+  </ul>
+</main>
+
+<script>
+  let allMovies = [];
+
+  function iconSvg() {
+    return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m23 7-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
+  }
+
+  function render(movies) {
+    const list = document.getElementById("list");
+    const count = document.getElementById("count");
+    count.textContent = allMovies.length ? allMovies.length + " فیلم" : "";
+
+    if (!allMovies.length) {
+      list.innerHTML =
+        '<li class="empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m23 7-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg><div>هنوز فیلمی اضافه نشده.<br>یه فیلم به بات بفرست تا اینجا نشونش بدم.</div></li>';
+      return;
+    }
+
+    if (!movies.length) {
+      list.innerHTML = '<li class="no-match">چیزی با این اسم پیدا نشد.</li>';
+      return;
+    }
+
+    list.innerHTML = movies
+      .map(
+        (m) => `
+        <li>
+          <a href="/watch.html?id=${encodeURIComponent(m.name)}">
+            <div class="poster">${iconSvg()}</div>
+            <div class="title"><span>${escapeHtml(m.name)}</span></div>
+            <svg class="go" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          </a>
+        </li>`
+      )
+      .join("");
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  fetch("/api/movies")
+    .then((r) => r.json())
+    .then((movies) => {
+      allMovies = Array.isArray(movies) ? movies : [];
+      render(allMovies);
+    })
+    .catch(() => {
+      document.getElementById("list").innerHTML =
+        '<li class="no-match">خطا در بارگذاری لیست. صفحه رو رفرش کن.</li>';
+    });
+
+  document.getElementById("search").addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const filtered = q ? allMovies.filter((m) => m.name.toLowerCase().includes(q)) : allMovies;
+    render(filtered);
+  });
+</script>
+
 </body>
 </html>

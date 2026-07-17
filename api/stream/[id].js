@@ -2,7 +2,7 @@
 // تیکه‌تیکه (بر اساس Range که مرورگر/تلویزیون درخواست می‌ده) استریم می‌کنه.
 // اسم فیلم رو تو MongoDB جستجو می‌کنه تا شناسه دقیق پیام رو پیدا کنه.
 
-const { TelegramClient } = require("telegram");
+const { TelegramClient, Api } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 const bigInt = require("big-integer");
 const { getDb } = require("../../lib/db");
@@ -46,8 +46,11 @@ module.exports = async (req, res) => {
 
     const client = await getClient();
     const entity = await client.getEntity(botUsername);
-    const messages = await client.getMessages(entity, { ids: [movie.messageId] });
-    const message = messages && messages[0];
+    const recent = await client.getMessages(entity, {
+      limit: 200,
+      filter: new Api.InputMessagesFilterDocument(),
+    });
+    const message = recent.find((m) => m.id === movie.messageId);
 
     if (!message || !message.media || !message.media.document) {
       res.status(404).send("فایل روی تلگرام پیدا نشد (شاید پاک شده باشه).");
