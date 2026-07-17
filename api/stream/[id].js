@@ -28,15 +28,21 @@ module.exports = async (req, res) => {
   const botUsername = process.env.RELAY_BOT_USERNAME;
 
   try {
+    console.log("[stream] شروع، در حال اتصال...");
     const client = await getClient();
+    console.log("[stream] وصل شد. در حال پیدا کردن بات...");
     const entity = await client.getEntity(botUsername);
+    console.log("[stream] بات پیدا شد. در حال گرفتن پیام‌ها...");
     const recent = await client.getMessages(entity, { limit: 30 });
+    console.log(`[stream] ${recent.length} پیام گرفته شد.`);
     const message = recent.find((m) => m.media && m.media.document);
 
     if (!message) {
+      console.log("[stream] هیچ فیلمی تو پیام‌ها نبود.");
       res.status(404).send("هیچ فیلمی پیدا نشد. اول یه فایل به بات بفرست.");
       return;
     }
+    console.log("[stream] فیلم پیدا شد. در حال آماده‌سازی دانلود...");
 
     const doc = message.media.document;
     const fileSize = Number(doc.size);
@@ -76,12 +82,16 @@ module.exports = async (req, res) => {
       limit: end - start + 1,
     });
 
+    console.log(`[stream] شروع دانلود بایت ${start} تا ${end}...`);
+    let received = 0;
     for await (const chunk of iter) {
+      received += chunk.length;
       res.write(chunk);
     }
+    console.log(`[stream] دانلود تموم شد، ${received} بایت فرستاده شد.`);
     res.end();
   } catch (err) {
-    console.error(err);
+    console.error("[stream] خطا:", err);
     if (!res.headersSent) {
       res.status(500).send("خطا در پخش فایل");
     } else {
