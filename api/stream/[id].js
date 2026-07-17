@@ -27,6 +27,12 @@ function getClient() {
 
 module.exports = async (req, res) => {
   const botUsername = process.env.RELAY_BOT_USERNAME;
+  const requestedSlug = (req.query.id || "").toString().trim().toLowerCase();
+
+  if (!requestedSlug) {
+    res.status(400).send("لینک ناقصه");
+    return;
+  }
 
   try {
     console.log("[stream] شروع، در حال اتصال...");
@@ -34,13 +40,15 @@ module.exports = async (req, res) => {
     console.log("[stream] وصل شد. در حال پیدا کردن بات...");
     const entity = await client.getEntity(botUsername);
     console.log("[stream] بات پیدا شد. در حال گرفتن پیام‌ها...");
-    const recent = await client.getMessages(entity, { limit: 30 });
+    const recent = await client.getMessages(entity, { limit: 300 });
     console.log(`[stream] ${recent.length} پیام گرفته شد.`);
-    const message = recent.find((m) => m.media && m.media.document);
+    const message = recent.find(
+      (m) => m.media && m.media.document && (m.message || "").trim().toLowerCase() === requestedSlug
+    );
 
     if (!message) {
-      console.log("[stream] هیچ فیلمی تو پیام‌ها نبود.");
-      res.status(404).send("هیچ فیلمی پیدا نشد. اول یه فایل به بات بفرست.");
+      console.log(`[stream] فیلمی با اسم "${requestedSlug}" پیدا نشد.`);
+      res.status(404).send("فیلمی با این اسم پیدا نشد.");
       return;
     }
     console.log("[stream] فیلم پیدا شد. در حال آماده‌سازی دانلود...");
