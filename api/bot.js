@@ -98,10 +98,10 @@ module.exports = async (req, res) => {
 function sanitizeSlug(text) {
   return text
     .trim()
-    .toLowerCase()
     .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9_-]/g, "")
-    .slice(0, 40);
+    .replace(/[\/\\?%*:|"'<>#&=]+/g, "")
+    .replace(/[a-zA-Z]/g, (c) => c.toLowerCase())
+    .slice(0, 60);
 }
 
 async function sendMessage(token, chatId, text) {

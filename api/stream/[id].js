@@ -46,11 +46,25 @@ module.exports = async (req, res) => {
 
     const client = await getClient();
     const entity = await client.getEntity(botUsername);
-    const recent = await client.getMessages(entity, {
-      limit: 200,
-      filter: new Api.InputMessagesFilterDocument(),
-    });
-    const message = recent.find((m) => m.id === movie.messageId);
+
+    // روش ۱: مستقیم با شناسه (سریع‌تر، ولی گاهی جواب نمی‌ده)
+    let message = null;
+    try {
+      const direct = await client.getMessages(entity, { ids: [movie.messageId] });
+      message = direct && direct[0] && direct[0].media && direct[0].media.document ? direct[0] : null;
+    } catch (e) {
+      console.log("[stream] روش مستقیم جواب نداد:", e.message);
+    }
+
+    // روش ۲ (fallback): گشتن وسط لیست فایل‌ها
+    if (!message) {
+      console.log("[stream] رفتن سراغ روش fallback...");
+      const recent = await client.getMessages(entity, {
+        limit: 200,
+        filter: new Api.InputMessagesFilterDocument(),
+      });
+      message = recent.find((m) => m.id === movie.messageId) || null;
+    }
 
     if (!message || !message.media || !message.media.document) {
       res.status(404).send("فایل روی تلگرام پیدا نشد (شاید پاک شده باشه).");
