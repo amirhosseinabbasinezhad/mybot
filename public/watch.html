@@ -41,7 +41,6 @@
     display: block;
   }
 
-  /* ===== کنترل‌ها ===== */
   .controls {
     position: absolute;
     bottom: 0;
@@ -62,7 +61,6 @@
     pointer-events: auto;
   }
 
-  /* ===== نوار پیشرفت ===== */
   .progress-container {
     display: flex;
     align-items: center;
@@ -130,7 +128,6 @@
     opacity: 1;
   }
 
-  /* ===== دکمه‌ها ===== */
   .buttons {
     display: flex;
     align-items: center;
@@ -182,22 +179,29 @@
     fill: white;
   }
 
-  /* ===== نمایش حجم دانلود ===== */
   .download-info {
     position: absolute;
     top: 70px;
     right: 20px;
-    color: #888;
+    color: #aaa;
     font-size: 12px;
     z-index: 5;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.6);
     padding: 6px 12px;
     border-radius: 6px;
     direction: ltr;
     font-variant-numeric: tabular-nums;
+    font-family: monospace;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255,255,255,0.05);
   }
 
-  /* ===== وضعیت بارگذاری ===== */
+  .download-info .label {
+    color: #666;
+    font-size: 10px;
+    margin-right: 4px;
+  }
+
   .center-status {
     position: absolute;
     top: 50%;
@@ -234,7 +238,6 @@
     color: #888;
   }
 
-  /* ===== خطا ===== */
   .error-overlay {
     position: absolute;
     top: 0;
@@ -290,7 +293,6 @@
     margin-top: 12px;
   }
 
-  /* ===== تاپ بار ===== */
   .topbar {
     position: absolute;
     top: 0;
@@ -385,9 +387,8 @@
     crossorigin="anonymous"
   ></video>
 
-  <!-- نمایش حجم دانلود -->
   <div class="download-info">
-    📥 <span id="downloadSize">0</span> MB
+    <span class="label">📥</span> <span id="downloadSize">0 B</span>
   </div>
 
   <div class="center-status" id="centerStatus">
@@ -501,6 +502,34 @@ function formatTime(seconds) {
 }
 
 // ============================================================
+// 📊 محاسبه کل حجم بافر شده (همه بخش‌ها)
+// ============================================================
+function getTotalBuffered() {
+  let total = 0;
+  for (let i = 0; i < video.buffered.length; i++) {
+    const start = video.buffered.start(i);
+    const end = video.buffered.end(i);
+    total += (end - start);
+  }
+  return total;
+}
+
+// ============================================================
+// 📊 نمایش حجم دانلود با فرمت بهتر
+// ============================================================
+function formatSize(bytes) {
+  if (bytes < 1024) {
+    return bytes + ' B';
+  } else if (bytes < 1024 * 1024) {
+    return (bytes / 1024).toFixed(1) + ' KB';
+  } else if (bytes < 1024 * 1024 * 1024) {
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  } else {
+    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+  }
+}
+
+// ============================================================
 // 📊 آپدیت نوار پیشرفت و حجم دانلود
 // ============================================================
 function updateProgress() {
@@ -511,16 +540,15 @@ function updateProgress() {
   timeCurrent.textContent = formatTime(video.currentTime);
   timeDuration.textContent = formatTime(video.duration);
 
-  // بافر
   if (video.buffered.length > 0) {
-    const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-    const bufferPercent = (bufferedEnd / video.duration) * 100;
+    // 🔥 محاسبه کل حجم دانلود شده (همه بخش‌ها)
+    const totalBuffered = getTotalBuffered();
+    const bufferPercent = (totalBuffered / video.duration) * 100;
     progressBuffer.style.width = bufferPercent + '%';
     
-    // 🔥 نمایش حجم دانلود شده
-    totalBytes = Math.max(totalBytes, bufferedEnd);
-    const mb = (totalBytes / (1024 * 1024)).toFixed(1);
-    downloadSize.textContent = mb;
+    // 🔥 نمایش حجم کل دانلود شده
+    totalBytes = Math.max(totalBytes, totalBuffered);
+    downloadSize.textContent = formatSize(totalBytes);
   }
 }
 
@@ -620,7 +648,7 @@ setTimeout(showControls, 1000);
 // ============================================================
 video.addEventListener('waiting', () => {
   centerStatus.classList.remove('hidden');
-  centerStatus.querySelector('.loading-text').textContent = '⏳ در حال بافر...';
+  centerStatus.querySelector('.loading-text').textContent = 'در حال بارگیری ...';
 });
 
 video.addEventListener('canplay', () => {
@@ -649,7 +677,7 @@ btnRetry.addEventListener('click', () => {
   hideError();
   retryCount = 0;
   totalBytes = 0;
-  downloadSize.textContent = '0';
+  downloadSize.textContent = '0 B';
   loadVideo();
 });
 
