@@ -42,19 +42,17 @@ module.exports = async (req, res) => {
     }
 
     if (data.startsWith('addtext_')) {
-      // 🔥 مهم: متن رو از داده‌های callback استخراج کن
       const text = data.replace('addtext_', '');
       
       console.log("[bot] 📝 افزودن متن از callback:", text);
       
       try {
         const db = await getDb();
-        const result = await db.collection("texts").insertOne({
+        await db.collection("texts").insertOne({
           text: text,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        console.log("[bot] ✅ متن با ID اضافه شد:", result.insertedId);
         await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت به لیست اضافه شد:\n\n"${text}"`);
       } catch (err) {
         console.error("[bot] ❌ Error adding text:", err);
@@ -154,7 +152,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 📝 اگر پیام متنی معمولی بود و فیلم نبود
+  // 📝 اگر پیام متنی معمولی بود و فیلم نبود (همه متن‌ها، حتی لینک)
   // ============================================================
   if (message.text && !message.reply_to_message && !hasFile) {
     const text = message.text.trim();
@@ -165,9 +163,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // 🔥 برای متن‌های فارسی، باید encodeURIComponent کنیم
-    const encodedText = encodeURIComponent(text);
-    
+    // 🔥 برای همه متن‌ها (حتی لینک) سوال بپرس
     const keyboard = {
       inline_keyboard: [
         [
