@@ -7,7 +7,7 @@ module.exports = async (req, res) => {
   }
 
   const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-  const CHANNEL_USERNAME = process.env.CHANNEL_USERNAME; // فقط یوزرنیم
+  const CHANNEL_USERNAME = process.env.CHANNEL_USERNAME;
   const BASE_URL = process.env.PUBLIC_BASE_URL;
   const ALLOWED_USER_IDS = (process.env.ALLOWED_USER_ID || "")
     .split(",")
@@ -16,7 +16,53 @@ module.exports = async (req, res) => {
 
   const update = req.body;
   const message = update && update.message;
+  const callback = update && update.callback_query;
 
+  // ============================================================
+  // 📞 مدیریت Callback (پاسخ به دکمه‌های شیشه‌ای)
+  // ⚠️ این بخش باید اول بررسی بشه!
+  // ============================================================
+  if (callback) {
+    const data = callback.data;
+    const chatId = callback.message.chat.id;
+    const fromId = String((callback.from && callback.from.id) || "");
+
+    if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
+      await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (data === 'ignore') {
+      await sendMessage(BOT_TOKEN, chatId, '❌ متن اضافه نشد.');
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (data.startsWith('addtext_')) {
+      const text = data.replace('addtext_', '');
+      
+      try {
+        const db = await getDb();
+        await db.collection("texts").insertOne({
+          text: text,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت به لیست اضافه شد:\n\n"${text}"`);
+      } catch (err) {
+        console.error(err);
+        await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن');
+      }
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+  }
+
+  // ============================================================
+  // 📥 بررسی پیام
+  // ============================================================
   if (!message) {
     res.status(200).json({ ok: true });
     return;
@@ -25,14 +71,44 @@ module.exports = async (req, res) => {
   const chatId = message.chat.id;
   const fromId = String((message.from && message.from.id) || "");
 
-  // بررسی دسترسی
   if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
     await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
     res.status(200).json({ ok: true });
     return;
   }
 
-  // حالت ۱: پاسخ به سوال "اسم فیلم چیه؟"
+  // ============================================================
+  // 📝 مدیریت متن از طریق تلگرام (دستور /addtext)
+  // ============================================================
+  if (message.text && message.text.startsWith('/addtext')) {
+    const text = message.text.replace('/addtext', '').trim();
+    
+    if (!text) {
+      await sendMessage(BOT_TOKEN, chatId, '❌ لطفاً بعد از /addtext متن را وارد کنید.\nمثال: /addtext سلام دنیا');
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    try {
+      const db = await getDb();
+      await db.collection("texts").insertOne({
+        text: text,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+      await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت اضافه شد:\n\n"${text}"`);
+    } catch (err) {
+      console.error(err);
+      await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن');
+    }
+
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  // ============================================================
+  // 🎬 حالت ۱: پاسخ به سوال "اسم فیلم چیه؟"
+  // ============================================================
   const replyText = message.reply_to_message && message.reply_to_message.text;
   const refMatch = replyText && /\[ref:(\d+)\]/.exec(replyText);
 
@@ -47,7 +123,7 @@ module.exports = async (req, res) => {
         {
           $set: { 
             name: slug, 
-            channelUsername: CHANNEL_USERNAME, // ذخیره یوزرنیم
+            channelUsername: CHANNEL_USERNAME,
             messageId: channelMessageId, 
             updatedAt: new Date() 
           },
@@ -71,9 +147,45 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // حالت ۲: فایل جدید
+  // ============================================================
+  // 📝 اگر پیام متنی معمولی بود و فیلم نبود
+  // ============================================================
   const hasFile = message.document || message.video || message.audio;
 
+  if (message.text && !message.reply_to_message && !hasFile) {
+    const text = message.text.trim();
+    
+    if (text.length < 2) {
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '✅ بله، به لیست متن‌ها اضافه کن', callback_data: `addtext_${text}` },
+          { text: '❌ نه، فقط چت', callback_data: 'ignore' }
+        ]
+      ]
+    };
+
+    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: `📝 آیا می‌خواهید این متن را به لیست متن‌ها اضافه کنید؟\n\n"${text}"`,
+        reply_markup: keyboard,
+      }),
+    });
+
+    res.status(200).json({ ok: true });
+    return;
+  }
+
+  // ============================================================
+  // 🎬 حالت ۲: فایل جدید (فیلم)
+  // ============================================================
   if (!hasFile) {
     await sendMessage(BOT_TOKEN, chatId, "📁 یه فایل ویدیویی یا فیلم برام بفرست.");
     res.status(200).json({ ok: true });
@@ -83,12 +195,11 @@ module.exports = async (req, res) => {
   try {
     console.log("[bot] Forwarding to channel:", CHANNEL_USERNAME);
     
-    // ارسال به کانال با یوزرنیم
     const forward = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: CHANNEL_USERNAME, // ← فقط یوزرنیم
+        chat_id: CHANNEL_USERNAME,
         from_chat_id: chatId,
         message_id: message.message_id,
       }),
@@ -111,6 +222,10 @@ module.exports = async (req, res) => {
 
   res.status(200).json({ ok: true });
 };
+
+// ============================================================
+// 🛠 توابع کمکی
+// ============================================================
 
 function sanitizeSlug(text) {
   return text
