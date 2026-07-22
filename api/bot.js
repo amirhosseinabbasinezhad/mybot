@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
   const message = update && update.message;
   const callback = update && update.callback_query;
 
-  console.log("[bot] 📩 دریافت شد");
+  console.log("[bot] 📩 دریافت شد:", JSON.stringify(update).substring(0, 300));
 
   // ============================================================
   // 📞 مدیریت Callback (پاسخ به دکمه‌های شیشه‌ای)
@@ -56,7 +56,7 @@ module.exports = async (req, res) => {
         await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت به لیست اضافه شد:\n\n"${text}"`);
       } catch (err) {
         console.error("[bot] ❌ Error adding text:", err);
-        await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن: ' + err.message);
+        await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن');
       }
 
       res.status(200).json({ ok: true });
@@ -73,7 +73,7 @@ module.exports = async (req, res) => {
   const fromId = String((message.from && message.from.id) || "");
   const hasFile = message.document || message.video || message.audio;
 
-  console.log("[bot] 📝 از:", fromId, "متن:", message.text, "فایل:", !!hasFile);
+  console.log("[bot] 📝 متن:", message.text, "| فایل:", !!hasFile);
 
   if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
     await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
@@ -82,7 +82,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 📝 مدیریت متن از طریق تلگرام (دستور /addtext)
+  // 📝 دستور /addtext
   // ============================================================
   if (message.text && message.text.startsWith('/addtext')) {
     const text = message.text.replace('/addtext', '').trim();
@@ -103,7 +103,7 @@ module.exports = async (req, res) => {
       await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت اضافه شد:\n\n"${text}"`);
     } catch (err) {
       console.error("[bot] ❌ Error:", err);
-      await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن: ' + err.message);
+      await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن');
     }
 
     res.status(200).json({ ok: true });
@@ -111,7 +111,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 🎬 حالت ۱: پاسخ به سوال "اسم فیلم چیه؟"
+  // 🎬 پاسخ به سوال "اسم فیلم چیه؟"
   // ============================================================
   const replyText = message.reply_to_message && message.reply_to_message.text;
   const refMatch = replyText && /\[ref:(\d+)\]/.exec(replyText);
@@ -152,22 +152,25 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 📝 اگر پیام متنی معمولی بود و فیلم نبود (همه متن‌ها، حتی لینک)
+  // 📝 پیام متنی (همه متن‌ها، حتی لینک)
   // ============================================================
   if (message.text && !message.reply_to_message && !hasFile) {
     const text = message.text.trim();
     
     // اگه متن خیلی کوتاه بود یا دستور بود، نادیده بگیر
     if (text.length < 2 || text.startsWith('/')) {
+      console.log("[bot] ⏭️ نادیده گرفته شد (کوتاه یا دستور)");
       res.status(200).json({ ok: true });
       return;
     }
 
-    // 🔥 برای همه متن‌ها (حتی لینک) سوال بپرس
+    console.log("[bot] 📝 سوال پرسیدن برای:", text);
+
+    // 🔥 برای همه متن‌ها سوال بپرس (حتی لینک)
     const keyboard = {
       inline_keyboard: [
         [
-          { text: '✅ بله، به لیست متن‌ها اضافه کن', callback_data: `addtext_${text}` },
+          { text: '✅ بله، اضافه کن', callback_data: `addtext_${text}` },
           { text: '❌ نه، فقط چت', callback_data: 'ignore' }
         ]
       ]
@@ -188,7 +191,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 🎬 حالت ۲: فایل جدید (فیلم)
+  // 🎬 فایل جدید (فیلم)
   // ============================================================
   if (!hasFile) {
     await sendMessage(BOT_TOKEN, chatId, "📁 یه فایل ویدیویی یا فیلم برام بفرست.");
