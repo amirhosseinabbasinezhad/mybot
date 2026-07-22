@@ -18,11 +18,13 @@ module.exports = async (req, res) => {
   const message = update && update.message;
   const callback = update && update.callback_query;
 
+  console.log("[bot] 📩 دریافت شد");
+
   // ============================================================
   // 📞 مدیریت Callback (پاسخ به دکمه‌های شیشه‌ای)
-  // ⚠️ این بخش باید اول بررسی بشه!
   // ============================================================
   if (callback) {
+    console.log("[bot] 📞 Callback:", callback.data);
     const data = callback.data;
     const chatId = callback.message.chat.id;
     const fromId = String((callback.from && callback.from.id) || "");
@@ -40,19 +42,23 @@ module.exports = async (req, res) => {
     }
 
     if (data.startsWith('addtext_')) {
+      // 🔥 مهم: متن رو از داده‌های callback استخراج کن
       const text = data.replace('addtext_', '');
+      
+      console.log("[bot] 📝 افزودن متن از callback:", text);
       
       try {
         const db = await getDb();
-        await db.collection("texts").insertOne({
+        const result = await db.collection("texts").insertOne({
           text: text,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
+        console.log("[bot] ✅ متن با ID اضافه شد:", result.insertedId);
         await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت به لیست اضافه شد:\n\n"${text}"`);
       } catch (err) {
-        console.error(err);
-        await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن');
+        console.error("[bot] ❌ Error adding text:", err);
+        await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن: ' + err.message);
       }
 
       res.status(200).json({ ok: true });
@@ -60,9 +66,6 @@ module.exports = async (req, res) => {
     }
   }
 
-  // ============================================================
-  // 📥 بررسی پیام
-  // ============================================================
   if (!message) {
     res.status(200).json({ ok: true });
     return;
@@ -70,6 +73,9 @@ module.exports = async (req, res) => {
 
   const chatId = message.chat.id;
   const fromId = String((message.from && message.from.id) || "");
+  const hasFile = message.document || message.video || message.audio;
+
+  console.log("[bot] 📝 از:", fromId, "متن:", message.text, "فایل:", !!hasFile);
 
   if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
     await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
@@ -98,8 +104,8 @@ module.exports = async (req, res) => {
       });
       await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت اضافه شد:\n\n"${text}"`);
     } catch (err) {
-      console.error(err);
-      await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن');
+      console.error("[bot] ❌ Error:", err);
+      await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن: ' + err.message);
     }
 
     res.status(200).json({ ok: true });
@@ -150,16 +156,18 @@ module.exports = async (req, res) => {
   // ============================================================
   // 📝 اگر پیام متنی معمولی بود و فیلم نبود
   // ============================================================
-  const hasFile = message.document || message.video || message.audio;
-
   if (message.text && !message.reply_to_message && !hasFile) {
     const text = message.text.trim();
     
-    if (text.length < 2) {
+    // اگه متن خیلی کوتاه بود یا دستور بود، نادیده بگیر
+    if (text.length < 2 || text.startsWith('/')) {
       res.status(200).json({ ok: true });
       return;
     }
 
+    // 🔥 برای متن‌های فارسی، باید encodeURIComponent کنیم
+    const encodedText = encodeURIComponent(text);
+    
     const keyboard = {
       inline_keyboard: [
         [
