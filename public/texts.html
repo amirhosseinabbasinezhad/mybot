@@ -96,7 +96,6 @@
     margin: 0 auto;
   }
 
-  /* ===== دکمه افزودن ===== */
   .add-section {
     margin-bottom: 20px;
     display: flex;
@@ -146,7 +145,6 @@
     transform: scale(0.97);
   }
 
-  /* ===== لیست متن‌ها ===== */
   .text-list {
     list-style: none;
     padding: 0;
@@ -162,7 +160,7 @@
     padding: 12px 16px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     transition: background 0.15s ease, border-color 0.15s ease;
   }
 
@@ -176,16 +174,39 @@
     min-width: 0;
     font-size: 14px;
     color: var(--text);
+    direction: ltr;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .text-content .preview {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    direction: ltr;
-    text-align: left;
+  }
+
+  .text-content .btn-more {
+    background: none;
+    border: none;
+    color: var(--gold);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background 0.2s;
+    font-family: inherit;
+    flex-shrink: 0;
+  }
+
+  .text-content .btn-more:hover {
+    background: rgba(224,169,74,0.15);
   }
 
   .text-actions {
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-shrink: 0;
   }
 
@@ -219,7 +240,6 @@
     color: var(--red);
   }
 
-  /* ===== حالت خالی ===== */
   .empty {
     text-align: center;
     padding: 60px 20px;
@@ -232,7 +252,6 @@
     margin-bottom: 14px;
   }
 
-  /* ===== اسپینر ===== */
   .loading {
     text-align: center;
     padding: 40px;
@@ -253,7 +272,128 @@
     to { transform: rotate(360deg); }
   }
 
-  /* ===== پیام موفقیت/خطا ===== */
+  /* ===== Modal (پاپ‌آپ) ===== */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.show {
+    display: flex;
+  }
+
+  .modal-box {
+    max-width: 560px;
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 30px;
+    position: relative;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-box .modal-title {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-box .modal-title .btn-close-modal {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 22px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.2s;
+  }
+
+  .modal-box .modal-title .btn-close-modal:hover {
+    background: rgba(255,255,255,0.05);
+  }
+
+  .modal-box .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 0;
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.8;
+    word-break: break-all;
+    direction: ltr;
+    text-align: left;
+    white-space: pre-wrap;
+    max-height: 400px;
+  }
+
+  .modal-box .modal-body::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .modal-box .modal-body::-webkit-scrollbar-track {
+    background: var(--bg-soft);
+    border-radius: 3px;
+  }
+
+  .modal-box .modal-body::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+
+  .modal-box .modal-footer {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    justify-content: flex-end;
+  }
+
+  .modal-box .modal-footer button {
+    padding: 8px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 13px;
+    transition: background 0.2s;
+  }
+
+  .modal-box .modal-footer .btn-copy-modal {
+    background: var(--green);
+    color: #fff;
+  }
+
+  .modal-box .modal-footer .btn-copy-modal:hover {
+    background: #27ae60;
+  }
+
+  .modal-box .modal-footer .btn-close-modal-footer {
+    background: var(--border);
+    color: var(--text);
+  }
+
+  .modal-box .modal-footer .btn-close-modal-footer:hover {
+    background: #333;
+  }
+
   .toast {
     position: fixed;
     bottom: 30px;
@@ -264,7 +404,7 @@
     padding: 12px 24px;
     border-radius: 10px;
     font-size: 14px;
-    z-index: 100;
+    z-index: 1000;
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
@@ -294,6 +434,13 @@
       padding: 4px 6px;
       font-size: 12px;
     }
+    .modal-box {
+      padding: 20px;
+      margin: 10px;
+    }
+    .modal-box .modal-body {
+      font-size: 14px;
+    }
   }
 </style>
 </head>
@@ -308,13 +455,11 @@
 </header>
 
 <main>
-  <!-- بخش افزودن -->
   <div class="add-section">
     <input type="text" id="inputText" placeholder="متن جدید را وارد کنید..." />
     <button class="btn-add" id="btnAdd">➕ افزودن</button>
   </div>
 
-  <!-- لیست متن‌ها -->
   <ul class="text-list" id="textList">
     <div class="loading">
       <div class="spinner"></div>
@@ -323,24 +468,43 @@
   </ul>
 </main>
 
-<!-- توست (پیام) -->
+<!-- ===== Modal (پاپ‌آپ) ===== -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>📄 متن کامل</span>
+      <button class="btn-close-modal" id="modalCloseBtn">&times;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-copy-modal" id="modalCopyBtn">📋 کپی متن</button>
+      <button class="btn-close-modal-footer" id="modalCloseFooter">بستن</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Toast ===== -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ============================================================
-// 📝 مدیریت متن‌ها
-// ============================================================
-
 const API_URL = '/api/texts';
 const textList = document.getElementById('textList');
 const inputText = document.getElementById('inputText');
 const btnAdd = document.getElementById('btnAdd');
 const toast = document.getElementById('toast');
 
+// المان‌های مودال
+const modalOverlay = document.getElementById('modalOverlay');
+const modalBody = document.getElementById('modalBody');
+const modalCopyBtn = document.getElementById('modalCopyBtn');
+const modalCloseBtn = document.getElementById('modalCloseBtn');
+const modalCloseFooter = document.getElementById('modalCloseFooter');
+
 let allTexts = [];
+let currentModalText = '';
 
 // ============================================================
-// 📊 نمایش توست
+// 📊 Toast
 // ============================================================
 function showToast(message, type = 'success') {
   toast.textContent = message;
@@ -374,7 +538,7 @@ async function loadTexts() {
 }
 
 // ============================================================
-// 🖼️ رندر متن‌ها
+// 🖼️ رندر متن‌ها (فقط ۱۰ کاراکتر اول)
 // ============================================================
 function renderTexts() {
   if (allTexts.length === 0) {
@@ -383,26 +547,85 @@ function renderTexts() {
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        <div>هنوز متنی اضافه نشده است.<br>متن مورد نظر را وارد کنید.</div>
+        <div>هنوز متنی اضافه نشده است.</div>
       </li>
     `;
     return;
   }
 
-  textList.innerHTML = allTexts.map(item => `
-    <li class="text-item" data-id="${item._id}">
-      <span class="text-content" title="${escapeHtml(item.text)}">${escapeHtml(item.text)}</span>
-      <div class="text-actions">
-        <button class="btn-edit" onclick="editText('${item._id}')" title="ویرایش">✏️</button>
-        <button class="btn-copy" onclick="copyText('${item._id}')" title="کپی">📋</button>
-        <button class="btn-delete" onclick="deleteText('${item._id}')" title="حذف">🗑️</button>
-      </div>
-    </li>
-  `).join('');
+  textList.innerHTML = allTexts.map(item => {
+    const fullText = item.text;
+    const previewText = fullText.length > 10 ? fullText.substring(0, 10) + '...' : fullText;
+    const needsMore = fullText.length > 10;
+
+    return `
+      <li class="text-item" data-id="${item._id}">
+        <span class="text-content">
+          <span class="preview">${escapeHtml(previewText)}</span>
+          ${needsMore ? `<button class="btn-more" onclick="showFullText('${item._id}')">بیشتر</button>` : ''}
+        </span>
+        <div class="text-actions">
+          <button class="btn-edit" onclick="editText('${item._id}')" title="ویرایش">✏️</button>
+          <button class="btn-copy" onclick="copyText('${item._id}')" title="کپی">📋</button>
+          <button class="btn-delete" onclick="deleteText('${item._id}')" title="حذف">🗑️</button>
+        </div>
+      </li>
+    `;
+  }).join('');
 }
 
 // ============================================================
-// 🛠️ Escape HTML
+// 🔍 نمایش متن کامل در مودال
+// ============================================================
+function showFullText(id) {
+  const item = allTexts.find(t => t._id === id);
+  if (!item) return;
+
+  currentModalText = item.text;
+  modalBody.textContent = item.text;
+  modalOverlay.classList.add('show');
+}
+
+// ============================================================
+// 📋 کپی از مودال
+// ============================================================
+modalCopyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(currentModalText)
+    .then(() => {
+      showToast('✅ متن کامل کپی شد');
+    })
+    .catch(() => {
+      // Fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = currentModalText;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      showToast('✅ متن کامل کپی شد');
+    });
+});
+
+// ============================================================
+// ❌ بستن مودال
+// ============================================================
+function closeModal() {
+  modalOverlay.classList.remove('show');
+}
+
+modalCloseBtn.addEventListener('click', closeModal);
+modalCloseFooter.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', (e) => {
+  if (e.target === modalOverlay) closeModal();
+});
+
+// کلید Escape برای بستن مودال
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ============================================================
+// 🛠 Escape HTML
 // ============================================================
 function escapeHtml(text) {
   const div = document.createElement('div');
@@ -486,7 +709,7 @@ function editText(id) {
 }
 
 // ============================================================
-// 📋 کپی متن
+// 📋 کپی متن (کل متن)
 // ============================================================
 function copyText(id) {
   const item = allTexts.find(t => t._id === id);
@@ -494,17 +717,16 @@ function copyText(id) {
 
   navigator.clipboard.writeText(item.text)
     .then(() => {
-      showToast('✅ متن کپی شد');
+      showToast('✅ متن کامل کپی شد');
     })
     .catch(() => {
-      // Fallback برای مرورگرهای قدیمی
       const textarea = document.createElement('textarea');
       textarea.value = item.text;
       document.body.appendChild(textarea);
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      showToast('✅ متن کپی شد');
+      showToast('✅ متن کامل کپی شد');
     });
 }
 
