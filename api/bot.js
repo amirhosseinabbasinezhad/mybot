@@ -18,7 +18,7 @@ module.exports = async (req, res) => {
   const message = update && update.message;
   const callback = update && update.callback_query;
 
-  console.log("[bot] 📩 دریافت شد:", JSON.stringify(update).substring(0, 300));
+  console.log("[bot] 📩 دریافت شد");
 
   // ============================================================
   // 📞 مدیریت Callback (پاسخ به دکمه‌های شیشه‌ای)
@@ -41,18 +41,37 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ===== بررسی addtext_ با ID =====
     if (data.startsWith('addtext_')) {
-      const text = data.replace('addtext_', '');
-      
-      console.log("[bot] 📝 افزودن متن از callback:", text);
+      const tempId = data.replace('addtext_', '');
       
       try {
         const db = await getDb();
+        
+        // پیدا کردن متن از دیتابیس موقت
+        const tempDoc = await db.collection("temp_texts").findOne({ 
+          tempId: tempId,
+          expiresAt: { $gt: new Date() } // هنوز منقضی نشده
+        });
+
+        if (!tempDoc) {
+          await sendMessage(BOT_TOKEN, chatId, '❌ لینک منقضی شده است. دوباره ارسال کنید.');
+          res.status(200).json({ ok: true });
+          return;
+        }
+
+        const text = tempDoc.text;
+
+        // ذخیره در دیتابیس اصلی
         await db.collection("texts").insertOne({
           text: text,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
+
+        // پاک کردن از دیتابیس موقت
+        await db.collection("temp_texts").deleteOne({ tempId: tempId });
+
         await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت به لیست اضافه شد:\n\n"${text}"`);
       } catch (err) {
         console.error("[bot] ❌ Error adding text:", err);
@@ -157,34 +176,55 @@ module.exports = async (req, res) => {
   if (message.text && !message.reply_to_message && !hasFile) {
     const text = message.text.trim();
     
-    // اگه متن خیلی کوتاه بود یا دستور بود، نادیده بگیر
     if (text.length < 2 || text.startsWith('/')) {
-      console.log("[bot] ⏭️ نادیده گرفته شد (کوتاه یا دستور)");
+      console.log("[bot] ⏭️ نادیده گرفته شد");
       res.status(200).json({ ok: true });
       return;
     }
 
     console.log("[bot] 📝 سوال پرسیدن برای:", text);
 
-    // 🔥 برای همه متن‌ها سوال بپرس (حتی لینک)
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '✅ بله، اضافه کن', callback_data: `addtext_${text}` },
-          { text: '❌ نه، فقط چت', callback_data: 'ignore' }
-        ]
-      ]
-    };
+    try {
+      const db = await getDb();
+      
+      // 🔥 تولید ID یکتا
+      const tempId = Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+      
+      // ذخیره متن در دیتابیس موقت (با انقضای ۵ دقیقه)
+      await db.collection("temp_texts").insertOne({
+        tempId: tempId,
+        text: text,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // ۵ دقیقه
+      });
 
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: `📝 آیا می‌خواهید این متن را به لیست متن‌ها اضافه کنید؟\n\n"${text}"`,
-        reply_markup: keyboard,
-      }),
-    });
+      // 🔥 دکمه‌ها با ID کوتاه
+      const keyboard = {
+        inline_keyboard: [
+          [
+            { text: '✅ بله، اضافه کن', callback_data: `addtext_${tempId}` },
+            { text: '❌ نه، فقط چت', callback_data: 'ignore' }
+          ]
+        ]
+      };
+
+      // نمایش خلاصه‌ای از متن (حداکثر ۵۰ کاراکتر)
+      const previewText = text.length > 50 ? text.substring(0, 50) + '...' : text;
+
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: `📝 آیا می‌خواهید این متن را به لیست متن‌ها اضافه کنید؟\n\n"${previewText}"`,
+          reply_markup: keyboard,
+        }),
+      });
+
+    } catch (err) {
+      console.error("[bot] ❌ Error:", err);
+      await sendMessage(BOT_TOKEN, chatId, '❌ خطا در پردازش متن');
+    }
 
     res.status(200).json({ ok: true });
     return;
