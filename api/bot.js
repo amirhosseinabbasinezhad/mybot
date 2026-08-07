@@ -69,6 +69,7 @@ module.exports = async (req, res) => {
           messageId: movie.messageId,
           channelUsername: CHANNEL_USERNAME,
           posterMessageId: null,
+          description: null,
           createdAt: new Date(),
           userId: fromId,
         });
@@ -167,7 +168,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 🖼️ دریافت پوستر (عکس)
+  // 🖼️ دریافت پوستر (عکس) + توضیحات از کپشن
   // ============================================================
   if (hasPhoto) {
     const db = await getDb();
@@ -177,8 +178,12 @@ module.exports = async (req, res) => {
     });
 
     if (pendingMovie) {
+      console.log("[bot] 📸 پوستر دریافت شد");
+
       try {
-        // فوروارد عکس به کانال
+        const caption = message.caption || "";
+        console.log("[bot] 📝 کپشن:", caption);
+
         const forwardPhoto = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -202,6 +207,7 @@ module.exports = async (req, res) => {
           messageId: pendingMovie.messageId,
           channelUsername: CHANNEL_USERNAME,
           posterMessageId: posterMessageId,
+          description: caption || "بدون توضیحات",
           createdAt: new Date(),
           userId: fromId,
         });
@@ -210,7 +216,10 @@ module.exports = async (req, res) => {
 
         const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(pendingMovie.movieName)}`;
         await sendMessage(BOT_TOKEN, chatId, 
-          `✅ فیلم با پوستر ذخیره شد!\n\n🎬 ${pendingMovie.movieName}\n🔗 لینک: ${link}`
+          `✅ فیلم با پوستر ذخیره شد!\n\n` +
+          `🎬 ${pendingMovie.movieName}\n` +
+          `📝 توضیحات: ${caption ? caption.substring(0, 50) + '...' : 'ندارد'}\n` +
+          `🔗 لینک: ${link}`
         );
 
       } catch (err) {

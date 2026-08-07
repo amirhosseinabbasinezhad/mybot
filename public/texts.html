@@ -272,7 +272,6 @@
     to { transform: rotate(360deg); }
   }
 
-  /* ===== Modal (پاپ‌آپ) ===== */
   .modal-overlay {
     position: fixed;
     top: 0;
@@ -468,7 +467,6 @@
   </ul>
 </main>
 
-<!-- ===== Modal (پاپ‌آپ) ===== -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal-box">
     <div class="modal-title">
@@ -483,7 +481,6 @@
   </div>
 </div>
 
-<!-- ===== Toast ===== -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -493,7 +490,6 @@ const inputText = document.getElementById('inputText');
 const btnAdd = document.getElementById('btnAdd');
 const toast = document.getElementById('toast');
 
-// المان‌های مودال
 const modalOverlay = document.getElementById('modalOverlay');
 const modalBody = document.getElementById('modalBody');
 const modalCopyBtn = document.getElementById('modalCopyBtn');
@@ -503,9 +499,6 @@ const modalCloseFooter = document.getElementById('modalCloseFooter');
 let allTexts = [];
 let currentModalText = '';
 
-// ============================================================
-// 📊 Toast
-// ============================================================
 function showToast(message, type = 'success') {
   toast.textContent = message;
   toast.className = 'toast show ' + type;
@@ -515,9 +508,6 @@ function showToast(message, type = 'success') {
   }, 3000);
 }
 
-// ============================================================
-// 📥 دریافت متن‌ها
-// ============================================================
 async function loadTexts() {
   try {
     const response = await fetch(API_URL);
@@ -537,9 +527,6 @@ async function loadTexts() {
   }
 }
 
-// ============================================================
-// 🖼️ رندر متن‌ها (فقط ۱۰ کاراکتر اول)
-// ============================================================
 function renderTexts() {
   if (allTexts.length === 0) {
     textList.innerHTML = `
@@ -574,9 +561,12 @@ function renderTexts() {
   }).join('');
 }
 
-// ============================================================
-// 🔍 نمایش متن کامل در مودال
-// ============================================================
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
 function showFullText(id) {
   const item = allTexts.find(t => t._id === id);
   if (!item) return;
@@ -586,16 +576,10 @@ function showFullText(id) {
   modalOverlay.classList.add('show');
 }
 
-// ============================================================
-// 📋 کپی از مودال
-// ============================================================
 modalCopyBtn.addEventListener('click', () => {
   navigator.clipboard.writeText(currentModalText)
-    .then(() => {
-      showToast('✅ متن کامل کپی شد');
-    })
+    .then(() => showToast('✅ متن کامل کپی شد'))
     .catch(() => {
-      // Fallback
       const textarea = document.createElement('textarea');
       textarea.value = currentModalText;
       document.body.appendChild(textarea);
@@ -606,9 +590,6 @@ modalCopyBtn.addEventListener('click', () => {
     });
 });
 
-// ============================================================
-// ❌ بستن مودال
-// ============================================================
 function closeModal() {
   modalOverlay.classList.remove('show');
 }
@@ -619,23 +600,10 @@ modalOverlay.addEventListener('click', (e) => {
   if (e.target === modalOverlay) closeModal();
 });
 
-// کلید Escape برای بستن مودال
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') closeModal();
 });
 
-// ============================================================
-// 🛠 Escape HTML
-// ============================================================
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ============================================================
-// ➕ افزودن متن
-// ============================================================
 async function addText() {
   const text = inputText.value.trim();
   if (!text) {
@@ -674,9 +642,6 @@ inputText.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') addText();
 });
 
-// ============================================================
-// ✏️ ویرایش متن
-// ============================================================
 function editText(id) {
   const item = allTexts.find(t => t._id === id);
   if (!item) return;
@@ -708,17 +673,12 @@ function editText(id) {
     });
 }
 
-// ============================================================
-// 📋 کپی متن (کل متن)
-// ============================================================
 function copyText(id) {
   const item = allTexts.find(t => t._id === id);
   if (!item) return;
 
   navigator.clipboard.writeText(item.text)
-    .then(() => {
-      showToast('✅ متن کامل کپی شد');
-    })
+    .then(() => showToast('✅ متن کامل کپی شد'))
     .catch(() => {
       const textarea = document.createElement('textarea');
       textarea.value = item.text;
@@ -730,9 +690,6 @@ function copyText(id) {
     });
 }
 
-// ============================================================
-// 🗑️ حذف متن
-// ============================================================
 function deleteText(id) {
   if (!confirm('آیا مطمئن هستید؟')) return;
 
@@ -754,9 +711,6 @@ function deleteText(id) {
     });
 }
 
-// ============================================================
-// 🚀 بارگذاری اولیه
-// ============================================================
 loadTexts();
 </script>
 

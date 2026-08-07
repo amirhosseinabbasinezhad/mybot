@@ -18,7 +18,13 @@ function getClient() {
       connectionRetries: 5,
       timeout: 120,
     });
-    clientPromise = client.connect().then(() => client);
+    clientPromise = client.connect().then(() => {
+      console.log("[stream] ✅ Connected to Telegram");
+      return client;
+    }).catch(err => {
+      console.error("[stream] ❌ Connection error:", err);
+      throw err;
+    });
   }
   return clientPromise;
 }
@@ -72,6 +78,7 @@ module.exports = async (req, res) => {
     const doc = message.media.document;
     const fileSize = Number(doc.size);
     const mimeType = doc.mimeType || "video/mp4";
+
     const CHUNK_SIZE = 5 * 1024 * 1024;
 
     let start = 0;

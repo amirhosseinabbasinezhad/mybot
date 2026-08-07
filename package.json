@@ -1,12 +1,14 @@
 {
   "name": "telegram-film-proxy",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "بات تلگرام + استریمر ویدیو روی Vercel، بدون نیاز به VPS",
+  "description": "بات تلگرام + استریمر ویدیو + پوستر + لاگین",
   "dependencies": {
     "telegram": "^2.22.2",
     "big-integer": "^1.6.52",
-    "mongodb": "^6.5.0"
+    "mongodb": "^6.5.0",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
     "input": "^1.0.1"

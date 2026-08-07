@@ -16,7 +16,13 @@ function getClient() {
     const client = new TelegramClient(session, apiId, apiHash, {
       connectionRetries: 3,
     });
-    clientPromise = client.connect().then(() => client);
+    clientPromise = client.connect().then(() => {
+      console.log("[poster] ✅ Connected to Telegram");
+      return client;
+    }).catch(err => {
+      console.error("[poster] ❌ Connection error:", err);
+      throw err;
+    });
   }
   return clientPromise;
 }
@@ -33,7 +39,12 @@ module.exports = async (req, res) => {
     const db = await getDb();
     const movie = await db.collection("movies").findOne({ name: requestedSlug });
 
-    if (!movie || !movie.posterMessageId) {
+    if (!movie) {
+      res.status(404).send("فیلمی با این اسم پیدا نشد.");
+      return;
+    }
+
+    if (!movie.posterMessageId) {
       res.status(404).send("پوستری برای این فیلم پیدا نشد");
       return;
     }
@@ -60,6 +71,6 @@ module.exports = async (req, res) => {
 
   } catch (err) {
     console.error("[poster] ❌ Error:", err);
-    res.status(500).send("خطا در دریافت پوستر");
+    res.status(500).send("خطا در دریافت پوستر: " + err.message);
   }
 };

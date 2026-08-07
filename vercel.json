@@ -3,6 +3,14 @@
     "api/stream/[id].js": {
       "maxDuration": 60,
       "memory": 1024
+    },
+    "api/poster/[id].js": {
+      "maxDuration": 30,
+      "memory": 512
+    },
+    "api/movie-info/[id].js": {
+      "maxDuration": 10,
+      "memory": 256
     }
   }
 }

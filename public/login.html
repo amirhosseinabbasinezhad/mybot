@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ورود</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0b0c10;
+    color: #f3efe6;
+    font-family: "Vazirmatn", Tahoma, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .login-box {
+    background: #191a20;
+    border: 1px solid #26272e;
+    border-radius: 16px;
+    padding: 40px;
+    max-width: 400px;
+    width: 100%;
+  }
+  .login-box h1 {
+    font-size: 24px;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .login-box .subtitle {
+    text-align: center;
+    color: #8d8b86;
+    font-size: 14px;
+    margin-bottom: 30px;
+  }
+  .login-box label {
+    display: block;
+    font-size: 13px;
+    color: #8d8b86;
+    margin-bottom: 6px;
+  }
+  .login-box input {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #26272e;
+    background: #131419;
+    color: #f3efe6;
+    font-family: inherit;
+    font-size: 14px;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+  .login-box input:focus {
+    border-color: #e0a94a;
+  }
+  .login-box .btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: #e0a94a;
+    color: #14120a;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s;
+  }
+  .login-box .btn:hover {
+    background: #f0b95a;
+  }
+  .error-msg {
+    color: #e74c3c;
+    font-size: 13px;
+    text-align: center;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .error-msg.show {
+    display: block;
+  }
+  .info-text {
+    text-align: center;
+    color: #8d8b86;
+    font-size: 12px;
+    margin-top: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="login-box">
+  <h1>🎬 فیلم‌پروکسی</h1>
+  <div class="subtitle">ورود به حساب کاربری</div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <label for="username">نام کاربری</label>
+  <input type="text" id="username" placeholder="نام کاربری" />
+
+  <label for="password">رمز عبور</label>
+  <input type="password" id="password" placeholder="رمز عبور" />
+
+  <button class="btn" id="submitBtn">ورود</button>
+
+  <div class="info-text">⚠️ توکن دسترسی هر ۱۵ دقیقه یکبار تمدید میشه</div>
+</div>
+
+<script>
+const usernameInput = document.getElementById('username');
+const passwordInput = document.getElementById('password');
+const submitBtn = document.getElementById('submitBtn');
+const errorMsg = document.getElementById('errorMsg');
+
+function showError(message) {
+  errorMsg.textContent = message;
+  errorMsg.classList.add('show');
+  setTimeout(() => errorMsg.classList.remove('show'), 5000);
+}
+
+async function handleLogin() {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value.trim();
+
+  if (!username || !password) {
+    showError('لطفاً نام کاربری و رمز عبور را وارد کنید');
+    return;
+  }
+
+  submitBtn.disabled = true;
+  submitBtn.textContent = '⏳';
+
+  try {
+    const response = await fetch('/api/auth?action=login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'خطا در ورود');
+    }
+
+    // 🔥 ذخیره هر دو توکن
+    localStorage.setItem('accessToken', data.accessToken);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    localStorage.setItem('username', data.username);
+    
+    window.location.href = '/movies.html';
+
+  } catch (err) {
+    showError(err.message);
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'ورود';
+  }
+}
+
+submitBtn.addEventListener('click', handleLogin);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleLogin();
+});
+
+if (localStorage.getItem('accessToken')) {
+  window.location.href = '/movies.html';
+}
+</script>
+
+</body>
+</html>

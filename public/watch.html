@@ -73,7 +73,6 @@
     font-weight: 800;
     margin-bottom: 12px;
     text-shadow: 0 4px 20px rgba(0,0,0,0.8);
-    direction: ltr;
     text-align: center;
   }
 
@@ -85,7 +84,7 @@
     line-height: 1.8;
     text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     display: -webkit-box;
-    -webkit-line-clamp: 3;
+    -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -263,6 +262,17 @@
 </div>
 
 <script>
+// ============================================================
+// 🔐 بررسی احراز هویت
+// ============================================================
+const token = localStorage.getItem('token');
+if (!token) {
+  window.location.href = '/login.html';
+}
+
+// ============================================================
+// 📥 دریافت اطلاعات فیلم
+// ============================================================
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 
@@ -282,9 +292,32 @@ if (!id) {
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#aaa;">لینک ناقص است</div>';
 }
 
-titleEl.textContent = decodeURIComponent(id);
-descriptionEl.textContent = 'در حال بارگذاری پوستر...';
+// ============================================================
+// 📥 دریافت اطلاعات فیلم (نام + توضیحات)
+// ============================================================
+async function loadMovieInfo() {
+  try {
+    const response = await fetch(`/api/movie-info/${encodeURIComponent(id)}`);
+    if (response.ok) {
+      const data = await response.json();
+      titleEl.textContent = data.name.replace(/-/g, ' ');
+      descriptionEl.textContent = data.description || 'بدون توضیحات';
+    } else {
+      titleEl.textContent = decodeURIComponent(id).replace(/-/g, ' ');
+      descriptionEl.textContent = 'توضیحاتی برای این فیلم موجود نیست';
+    }
+  } catch (err) {
+    console.error('Error loading movie info:', err);
+    titleEl.textContent = decodeURIComponent(id).replace(/-/g, ' ');
+    descriptionEl.textContent = 'خطا در بارگذاری توضیحات';
+  }
+}
 
+loadMovieInfo();
+
+// ============================================================
+// 📥 بارگذاری پوستر
+// ============================================================
 async function loadPoster() {
   try {
     const response = await fetch(`/api/poster/${encodeURIComponent(id)}`);
@@ -294,20 +327,23 @@ async function loadPoster() {
       posterImage.src = url;
       posterImage.onload = () => {
         posterImage.classList.add('loaded');
-        descriptionEl.textContent = 'برای شروع، روی دکمه پخش کلیک کنید';
       };
     } else {
       posterImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"%3E%3Crect fill="%23191a20" width="400" height="600"/%3E%3Ctext x="200" y="300" font-family="sans-serif" font-size="40" fill="%238d8b86" text-anchor="middle" dominant-baseline="central"%3E🎬%3C/text%3E%3C/svg%3E';
       posterImage.classList.add('loaded');
-      descriptionEl.textContent = 'پوستری برای این فیلم وجود ندارد';
     }
   } catch (err) {
     console.error('Error loading poster:', err);
+    posterImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"%3E%3Crect fill="%23191a20" width="400" height="600"/%3E%3Ctext x="200" y="300" font-family="sans-serif" font-size="40" fill="%238d8b86" text-anchor="middle" dominant-baseline="central"%3E🎬%3C/text%3E%3C/svg%3E';
+    posterImage.classList.add('loaded');
   }
 }
 
 loadPoster();
 
+// ============================================================
+// 🎬 پخش فیلم
+// ============================================================
 playBtn.addEventListener('click', () => {
   document.querySelector('.poster-container').style.display = 'none';
   document.querySelector('.overlay').style.display = 'none';
@@ -322,6 +358,9 @@ playBtn.addEventListener('click', () => {
   loading.classList.add('show');
 });
 
+// ============================================================
+// 🎮 کنترل‌های ویدیو
+// ============================================================
 video.addEventListener('loadeddata', () => {
   loading.classList.remove('show');
   controls.classList.add('visible');
@@ -355,6 +394,9 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
+// ============================================================
+// ⌨️ کیبورد
+// ============================================================
 document.addEventListener('keydown', (e) => {
   if (e.key === ' ' || e.key === 'Space') {
     e.preventDefault();
@@ -367,6 +409,8 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
+
+console.log('🎬 Player ready!');
 </script>
 
 </body>
