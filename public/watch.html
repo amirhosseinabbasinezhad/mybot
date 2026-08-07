@@ -263,9 +263,76 @@
 
 <script>
 // ============================================================
+// 🔐 مدیریت توکن با Refresh
+// ============================================================
+
+async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  
+  if (!refreshToken) {
+    window.location.href = '/login.html';
+    return null;
+  }
+
+  try {
+    const response = await fetch('/api/auth?action=refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'خطا در تمدید توکن');
+    }
+
+    localStorage.setItem('accessToken', data.accessToken);
+    return data.accessToken;
+
+  } catch (err) {
+    console.error('❌ خطا در تمدید توکن:', err);
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('username');
+    window.location.href = '/login.html';
+    return null;
+  }
+}
+
+async function fetchWithAuth(url, options = {}) {
+  let accessToken = localStorage.getItem('accessToken');
+  
+  if (!accessToken) {
+    window.location.href = '/login.html';
+    return;
+  }
+
+  options.headers = {
+    ...options.headers,
+    'Authorization': `Bearer ${accessToken}`
+  };
+
+  let response = await fetch(url, options);
+
+  if (response.status === 401) {
+    console.log('🔄 توکن منقضی شده، تمدید میکنم...');
+    
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      options.headers['Authorization'] = `Bearer ${newToken}`;
+      response = await fetch(url, options);
+    }
+  }
+
+  return response;
+}
+
+// ============================================================
 // 🔐 بررسی احراز هویت
 // ============================================================
-const token = localStorage.getItem('token');
+
+const token = localStorage.getItem('accessToken');
 if (!token) {
   window.location.href = '/login.html';
 }
@@ -273,6 +340,7 @@ if (!token) {
 // ============================================================
 // 📥 دریافت اطلاعات فیلم
 // ============================================================
+
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 
@@ -293,11 +361,20 @@ if (!id) {
 }
 
 // ============================================================
-// 📥 دریافت اطلاعات فیلم (نام + توضیحات)
+// 📥 دریافت اطلاعات فیلم (با fetchWithAuth)
 // ============================================================
 async function loadMovieInfo() {
   try {
-    const response = await fetch(`/api/movie-info/${encodeURIComponent(id)}`);
+    const response = await fetchWithAuth(`/api/movie-info/${encodeURIComponent(id)}`);
+    if (!response) return;
+    
+    if (response.status === 401) {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '/login.html';
+      return;
+    }
+    
     if (response.ok) {
       const data = await response.json();
       titleEl.textContent = data.name.replace(/-/g, ' ');
