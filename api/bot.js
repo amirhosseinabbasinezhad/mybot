@@ -21,10 +21,9 @@ module.exports = async (req, res) => {
   console.log("[bot] 📩 دریافت شد");
 
   // ============================================================
-  // 📞 مدیریت Callback (پاسخ به دکمه‌های شیشه‌ای)
+  // 📞 مدیریت Callback
   // ============================================================
   if (callback) {
-    console.log("[bot] 📞 Callback:", callback.data);
     const data = callback.data;
     const chatId = callback.message.chat.id;
     const fromId = String((callback.from && callback.from.id) || "");
@@ -35,49 +34,87 @@ module.exports = async (req, res) => {
       return;
     }
 
-    if (data === 'ignore') {
-      await sendMessage(BOT_TOKEN, chatId, '❌ متن اضافه نشد.');
+    if (data === 'continue_to_poster') {
+      const db = await getDb();
+      const pendingMovie = await db.collection("pending_movies").findOne({
+        userId: fromId,
+        status: 'waiting_for_poster'
+      });
+
+      if (!pendingMovie) {
+        await sendMessage(BOT_TOKEN, chatId, '❌ مشکلی پیش اومد. دوباره فیلم رو بفرست.');
+        res.status(200).json({ ok: true });
+        return;
+      }
+
+      await sendMessage(BOT_TOKEN, chatId, 
+        '🖼️ حالا پوستر فیلم رو بفرست (یه عکس).\n\nاگر پوستر نداری، دکمه "رد شدن" رو بزن.'
+      );
+      
       res.status(200).json({ ok: true });
       return;
     }
 
-    // ===== بررسی addtext_ با ID =====
-    if (data.startsWith('addtext_')) {
-      const tempId = data.replace('addtext_', '');
-      
-      try {
-        const db = await getDb();
-        
-        // پیدا کردن متن از دیتابیس موقت
-        const tempDoc = await db.collection("temp_texts").findOne({ 
-          tempId: tempId,
-          expiresAt: { $gt: new Date() } // هنوز منقضی نشده
-        });
+    if (data === 'skip_poster') {
+      const db = await getDb();
+      const pendingMovie = await db.collection("pending_movies").findOneAndDelete({
+        userId: fromId,
+        status: 'waiting_for_poster'
+      });
 
-        if (!tempDoc) {
-          await sendMessage(BOT_TOKEN, chatId, '❌ لینک منقضی شده است. دوباره ارسال کنید.');
-          res.status(200).json({ ok: true });
-          return;
-        }
-
-        const text = tempDoc.text;
-
-        // ذخیره در دیتابیس اصلی
-        await db.collection("texts").insertOne({
-          text: text,
+      if (pendingMovie && pendingMovie.value) {
+        const movie = pendingMovie.value;
+        await db.collection("movies").insertOne({
+          name: movie.movieName,
+          messageId: movie.messageId,
+          channelUsername: CHANNEL_USERNAME,
+          posterMessageId: null,
           createdAt: new Date(),
-          updatedAt: new Date(),
+          userId: fromId,
         });
 
-        // پاک کردن از دیتابیس موقت
-        await db.collection("temp_texts").deleteOne({ tempId: tempId });
-
-        await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت به لیست اضافه شد:\n\n"${text}"`);
-      } catch (err) {
-        console.error("[bot] ❌ Error adding text:", err);
-        await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن');
+        const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(movie.movieName)}`;
+        await sendMessage(BOT_TOKEN, chatId, 
+          `✅ فیلم بدون پوستر ذخیره شد!\n\n🎬 ${movie.movieName}\n🔗 لینک: ${link}`
+        );
       }
 
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // ===== مدیریت متون =====
+    if (data.startsWith('addtext_')) {
+      const tempId = data.replace('addtext_', '');
+      const db = await getDb();
+      
+      const tempDoc = await db.collection("temp_texts").findOne({ 
+        tempId: tempId,
+        expiresAt: { $gt: new Date() }
+      });
+
+      if (!tempDoc) {
+        await sendMessage(BOT_TOKEN, chatId, '❌ لینک منقضی شده است.');
+        res.status(200).json({ ok: true });
+        return;
+      }
+
+      await db.collection("texts").insertOne({
+        text: tempDoc.text,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: fromId,
+      });
+
+      await db.collection("temp_texts").deleteOne({ tempId: tempId });
+      await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت اضافه شد.`);
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    if (data === 'ignore') {
+      await sendMessage(BOT_TOKEN, chatId, '❌ متن اضافه نشد.');
       res.status(200).json({ ok: true });
       return;
     }
@@ -91,8 +128,7 @@ module.exports = async (req, res) => {
   const chatId = message.chat.id;
   const fromId = String((message.from && message.from.id) || "");
   const hasFile = message.document || message.video || message.audio;
-
-  console.log("[bot] 📝 متن:", message.text, "| فایل:", !!hasFile);
+  const hasPhoto = message.photo && message.photo.length > 0;
 
   if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
     await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
@@ -107,7 +143,7 @@ module.exports = async (req, res) => {
     const text = message.text.replace('/addtext', '').trim();
     
     if (!text) {
-      await sendMessage(BOT_TOKEN, chatId, '❌ لطفاً بعد از /addtext متن را وارد کنید.\nمثال: /addtext سلام دنیا');
+      await sendMessage(BOT_TOKEN, chatId, '❌ لطفاً بعد از /addtext متن را وارد کنید.');
       res.status(200).json({ ok: true });
       return;
     }
@@ -118,15 +154,73 @@ module.exports = async (req, res) => {
         text: text,
         createdAt: new Date(),
         updatedAt: new Date(),
+        userId: fromId,
       });
       await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت اضافه شد:\n\n"${text}"`);
     } catch (err) {
-      console.error("[bot] ❌ Error:", err);
+      console.error(err);
       await sendMessage(BOT_TOKEN, chatId, '❌ خطا در افزودن متن');
     }
 
     res.status(200).json({ ok: true });
     return;
+  }
+
+  // ============================================================
+  // 🖼️ دریافت پوستر (عکس)
+  // ============================================================
+  if (hasPhoto) {
+    const db = await getDb();
+    const pendingMovie = await db.collection("pending_movies").findOne({
+      userId: fromId,
+      status: 'waiting_for_poster'
+    });
+
+    if (pendingMovie) {
+      try {
+        // فوروارد عکس به کانال
+        const forwardPhoto = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: CHANNEL_USERNAME,
+            from_chat_id: chatId,
+            message_id: message.message_id,
+          }),
+        });
+
+        const photoResult = await forwardPhoto.json();
+
+        if (!photoResult.ok) {
+          throw new Error(photoResult.description || "خطا در ارسال پوستر");
+        }
+
+        const posterMessageId = photoResult.result.message_id;
+
+        await db.collection("movies").insertOne({
+          name: pendingMovie.movieName,
+          messageId: pendingMovie.messageId,
+          channelUsername: CHANNEL_USERNAME,
+          posterMessageId: posterMessageId,
+          createdAt: new Date(),
+          userId: fromId,
+        });
+
+        await db.collection("pending_movies").deleteOne({ _id: pendingMovie._id });
+
+        const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(pendingMovie.movieName)}`;
+        await sendMessage(BOT_TOKEN, chatId, 
+          `✅ فیلم با پوستر ذخیره شد!\n\n🎬 ${pendingMovie.movieName}\n🔗 لینک: ${link}`
+        );
+
+      } catch (err) {
+        console.error("[bot] ❌ Error saving poster:", err);
+        await sendMessage(BOT_TOKEN, chatId, '❌ خطا در ذخیره پوستر. دوباره تلاش کن.');
+      }
+
+      res.status(200).json({ ok: true });
+      return;
+    }
   }
 
   // ============================================================
@@ -139,66 +233,56 @@ module.exports = async (req, res) => {
     const channelMessageId = parseInt(refMatch[1], 10);
     const slug = sanitizeSlug(message.text) || `f${channelMessageId}`;
 
-    try {
-      const db = await getDb();
-      await db.collection("movies").updateOne(
-        { name: slug },
-        {
-          $set: { 
-            name: slug, 
-            channelUsername: CHANNEL_USERNAME,
-            messageId: channelMessageId, 
-            updatedAt: new Date() 
-          },
-          $setOnInsert: { createdAt: new Date() },
-        },
-        { upsert: true }
-      );
+    const db = await getDb();
 
-      const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(slug)}`;
-      await sendMessage(
-        BOT_TOKEN,
-        chatId,
-        `✅ لینک آماده شد:\n${link}\n\n📋 لیست همه فیلم‌ها:\n${BASE_URL}/movies.html`
-      );
-    } catch (err) {
-      console.error(err);
-      await sendMessage(BOT_TOKEN, chatId, "❌ یه مشکلی پیش اومد، دوباره امتحان کن.");
-    }
+    await db.collection("pending_movies").insertOne({
+      userId: fromId,
+      movieName: slug,
+      messageId: channelMessageId,
+      status: 'waiting_for_poster',
+      createdAt: new Date(),
+    });
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '🖼️ ارسال پوستر', callback_data: 'continue_to_poster' },
+          { text: '⏭️ رد شدن', callback_data: 'skip_poster' }
+        ]
+      ]
+    };
+
+    await sendMessage(BOT_TOKEN, chatId, 
+      `✅ اسم فیلم ثبت شد: "${slug}"\n\nحالا می‌تونی پوستر فیلم رو بفرستی (یه عکس).\nیا اگر پوستر نداری، دکمه "رد شدن" رو بزن.`,
+      keyboard
+    );
 
     res.status(200).json({ ok: true });
     return;
   }
 
   // ============================================================
-  // 📝 پیام متنی (همه متن‌ها، حتی لینک)
+  // 📝 پیام متنی (برای لیست متن‌ها)
   // ============================================================
-  if (message.text && !message.reply_to_message && !hasFile) {
+  if (message.text && !message.reply_to_message && !hasFile && !hasPhoto) {
     const text = message.text.trim();
     
     if (text.length < 2 || text.startsWith('/')) {
-      console.log("[bot] ⏭️ نادیده گرفته شد");
       res.status(200).json({ ok: true });
       return;
     }
 
-    console.log("[bot] 📝 سوال پرسیدن برای:", text);
-
     try {
       const db = await getDb();
-      
-      // 🔥 تولید ID یکتا
       const tempId = Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
       
-      // ذخیره متن در دیتابیس موقت (با انقضای ۵ دقیقه)
       await db.collection("temp_texts").insertOne({
         tempId: tempId,
         text: text,
         createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000), // ۵ دقیقه
+        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
       });
 
-      // 🔥 دکمه‌ها با ID کوتاه
       const keyboard = {
         inline_keyboard: [
           [
@@ -208,7 +292,6 @@ module.exports = async (req, res) => {
         ]
       };
 
-      // نمایش خلاصه‌ای از متن (حداکثر ۵۰ کاراکتر)
       const previewText = text.length > 50 ? text.substring(0, 50) + '...' : text;
 
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -223,7 +306,6 @@ module.exports = async (req, res) => {
 
     } catch (err) {
       console.error("[bot] ❌ Error:", err);
-      await sendMessage(BOT_TOKEN, chatId, '❌ خطا در پردازش متن');
     }
 
     res.status(200).json({ ok: true });
@@ -240,8 +322,6 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log("[bot] Forwarding to channel:", CHANNEL_USERNAME);
-    
     const forward = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -264,7 +344,7 @@ module.exports = async (req, res) => {
     await askForSlug(BOT_TOKEN, chatId, channelMessageId);
   } catch (err) {
     console.error("[bot] ❌ Error:", err);
-    await sendMessage(BOT_TOKEN, chatId, "❌ خطا در ارسال به کانال. مطمئن شوید بات به کانال اضافه شده است.");
+    await sendMessage(BOT_TOKEN, chatId, "❌ خطا در ارسال به کانال.");
   }
 
   res.status(200).json({ ok: true });
@@ -283,11 +363,14 @@ function sanitizeSlug(text) {
     .slice(0, 60);
 }
 
-async function sendMessage(token, chatId, text) {
+async function sendMessage(token, chatId, text, keyboard = null) {
+  const payload = { chat_id: chatId, text };
+  if (keyboard) payload.reply_markup = keyboard;
+  
   const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text }),
+    body: JSON.stringify(payload),
   });
   return r.json();
 }

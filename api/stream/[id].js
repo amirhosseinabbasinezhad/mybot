@@ -4,11 +4,7 @@ const bigInt = require("big-integer");
 const { getDb } = require("../../lib/db");
 
 module.exports.config = {
-  api: {
-    bodyParser: false,
-    responseLimit: false,
-    externalResolver: true,
-  },
+  api: { bodyParser: false, responseLimit: false },
 };
 
 let clientPromise = null;
@@ -22,21 +18,13 @@ function getClient() {
       connectionRetries: 5,
       timeout: 120,
     });
-    clientPromise = client.connect().then(() => {
-      console.log("[stream] ✅ Connected");
-      return client;
-    }).catch(err => {
-      console.error("[stream] ❌ Connection error:", err);
-      throw err;
-    });
+    clientPromise = client.connect().then(() => client);
   }
   return clientPromise;
 }
 
 module.exports = async (req, res) => {
   const requestedSlug = (req.query.id || "").toString().trim().toLowerCase();
-
-  console.log("[stream] New request:", requestedSlug);
 
   if (!requestedSlug) {
     res.status(400).send("لینک ناقصه");
@@ -54,15 +42,7 @@ module.exports = async (req, res) => {
 
     const client = await getClient();
     const channelUsername = movie.channelUsername || process.env.CHANNEL_USERNAME;
-
-    let entity;
-    try {
-      entity = await client.getEntity(channelUsername);
-    } catch (err) {
-      console.error("[stream] Channel not found:", err.message);
-      res.status(500).send("کانال پیدا نشد.");
-      return;
-    }
+    const entity = await client.getEntity(channelUsername);
 
     let message = null;
     try {
@@ -75,7 +55,7 @@ module.exports = async (req, res) => {
     if (!message) {
       try {
         const recent = await client.getMessages(entity, {
-          limit: 100,
+          limit: 200,
           filter: new Api.InputMessagesFilterDocument(),
         });
         message = recent.find((m) => m.id === movie.messageId) || null;
@@ -92,12 +72,7 @@ module.exports = async (req, res) => {
     const doc = message.media.document;
     const fileSize = Number(doc.size);
     const mimeType = doc.mimeType || "video/mp4";
-
-    // ========================================
-    // ✅ تنظیمات برای کاهش مصرف اینترنت
-    // ========================================
-    const CHUNK_SIZE = 1 * 1024 * 1024; // 1 مگابایت (کمتر = مصرف کمتر)
-    const REQUEST_SIZE = 64 * 1024; // 64KB
+    const CHUNK_SIZE = 5 * 1024 * 1024;
 
     let start = 0;
     let end = fileSize - 1;
@@ -116,58 +91,38 @@ module.exports = async (req, res) => {
     }
     if (end > fileSize - 1) end = fileSize - 1;
 
-    // ========================================
-    // ✅ هدرهای بهینه با کش
-    // ========================================
     res.writeHead(206, {
       "Content-Type": mimeType,
       "Content-Length": end - start + 1,
       "Content-Range": `bytes ${start}-${end}/${fileSize}`,
       "Accept-Ranges": "bytes",
       "Access-Control-Allow-Origin": "*",
-      "Cache-Control": "public, max-age=86400, stale-while-revalidate=86400", // ← کش ۲۴ ساعته
-      "Connection": "keep-alive",
+      "Cache-Control": "public, max-age=3600",
     });
 
-    console.log(`[stream] Sending: ${start}-${end}/${fileSize}`);
-
-    // ========================================
-    // ✅ دانلود با تنظیمات کم مصرف
-    // ========================================
     const iter = client.iterDownload({
       file: message.media,
       offset: bigInt(start),
       limit: end - start + 1,
-      requestSize: REQUEST_SIZE,
-      poolSize: 1, // ← فقط ۱ تا همزمان (کمترین مصرف)
+      requestSize: 256 * 1024,
+      poolSize: 2,
     });
 
     let bytesSent = 0;
-    let lastLog = Date.now();
-
     for await (const chunk of iter) {
       if (res.destroyed) break;
       res.write(chunk);
       bytesSent += chunk.length;
-
-      if (Date.now() - lastLog > 10000) {
-        const percent = ((bytesSent / (end - start + 1)) * 100).toFixed(1);
-        console.log(`[stream] Progress: ${percent}%`);
-        lastLog = Date.now();
-      }
     }
 
-    console.log(`[stream] ✅ Complete: ${bytesSent} bytes`);
     res.end();
 
   } catch (err) {
     console.error("[stream] ❌ Error:", err);
     if (!res.headersSent) {
-      res.status(500).send("خطا در پخش فایل: " + err.message);
+      res.status(500).send("خطا در پخش فایل");
     } else {
-      try {
-        res.end();
-      } catch (e) {}
+      res.end();
     }
   }
 };

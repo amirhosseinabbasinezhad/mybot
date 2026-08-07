@@ -6,13 +6,9 @@
 <title>پخش فیلم</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <style>
-  * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
   
   body {
     background: #000;
@@ -20,223 +16,144 @@
     font-family: "Vazirmatn", Tahoma, sans-serif;
     height: 100vh;
     overflow: hidden;
-    user-select: none;
   }
 
-  .player-container {
+  .container {
     position: relative;
     width: 100%;
     height: 100vh;
-    background: #000;
+    overflow: hidden;
+  }
+
+  .poster-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1;
+  }
+
+  .poster-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(8px) brightness(0.4);
+    transform: scale(1.1);
+    transition: filter 0.8s ease, transform 0.8s ease;
+  }
+
+  .poster-container img.loaded {
+    filter: blur(0px) brightness(0.5);
+    transform: scale(1);
+  }
+
+  .overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.9) 100%);
+    z-index: 2;
+  }
+
+  .info {
+    position: absolute;
+    bottom: 140px;
+    left: 0;
+    right: 0;
+    padding: 0 30px;
+    z-index: 3;
+    text-align: center;
+  }
+
+  .info .title {
+    font-size: 32px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.8);
+    direction: ltr;
+    text-align: center;
+  }
+
+  .info .description {
+    font-size: 16px;
+    color: rgba(255,255,255,0.7);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.8;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(224,169,74,0.9);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  /* ===== ویدیو - بدون کنترل پیش‌فرض ===== */
+  .play-btn:hover {
+    transform: translate(-50%, -50%) scale(1.1);
+    background: rgba(224,169,74,1);
+    box-shadow: 0 0 40px rgba(224,169,74,0.4);
+  }
+
+  .play-btn svg {
+    width: 36px;
+    height: 36px;
+    fill: #14120a;
+    margin-left: 4px;
+  }
+
   #player {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     width: 100%;
     height: 100%;
     object-fit: contain;
     background: #000;
+    z-index: 4;
+    display: none;
+  }
+
+  #player.playing {
     display: block;
   }
 
-  /* ===== کنترل‌های سفارشی ===== */
-  .controls {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 20px 20px 30px;
-    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
-    transition: opacity 0.4s ease, transform 0.4s ease;
-    opacity: 0;
-    transform: translateY(20px);
-    pointer-events: none;
-    z-index: 10;
-  }
-
-  .controls.visible {
-    opacity: 1;
-    transform: translateY(0);
-    pointer-events: auto;
-  }
-
-  /* ===== نوار پیشرفت ===== */
-  .progress-container {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-    direction: ltr;
-  }
-
-  .time-current,
-  .time-duration {
-    font-size: 12px;
-    color: #aaa;
-    min-width: 45px;
-    font-variant-numeric: tabular-nums;
-    direction: ltr;
-  }
-
-  .progress-bar {
-    flex: 1;
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    border-radius: 2px;
-    position: relative;
-    cursor: pointer;
-    transition: height 0.2s;
-    direction: ltr;
-  }
-
-  .progress-bar:hover {
-    height: 6px;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: #e0a94a;
-    border-radius: 2px;
-    width: 0%;
-    position: relative;
-  }
-
-  .progress-buffer {
-    height: 100%;
-    background: rgba(255,255,255,0.15);
-    border-radius: 2px;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 0%;
-  }
-
-  .progress-dot {
-    position: absolute;
-    right: -6px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 12px;
-    height: 12px;
-    background: #e0a94a;
-    border-radius: 50%;
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-
-  .progress-bar:hover .progress-dot {
-    opacity: 1;
-  }
-
-  /* ===== دکمه‌ها ===== */
-  .buttons {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    direction: ltr;
-  }
-
-  .btn {
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 22px;
-    cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 8px;
-    transition: background 0.2s, transform 0.1s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    min-height: 44px;
-  }
-
-  .btn:hover {
-    background: rgba(255,255,255,0.1);
-  }
-
-  .btn:active {
-    transform: scale(0.92);
-  }
-
-  .btn-play {
-    font-size: 32px;
-    background: rgba(255,255,255,0.08);
-    border-radius: 50%;
-    width: 56px;
-    height: 56px;
-    padding: 0;
-  }
-
-  .btn-play:hover {
-    background: rgba(255,255,255,0.15);
-  }
-
-  .btn-skip svg {
-    width: 28px;
-    height: 28px;
-    fill: white;
-  }
-
-  /* ===== دکمه‌های سمت راست (صدا، ۳ نقطه، تمام صفحه) ===== */
-  .right-buttons {
-    position: absolute;
-    right: 20px;
-    bottom: 95px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    z-index: 11;
-    direction: ltr;
-  }
-
-  .right-buttons .btn-icon {
-    background: rgba(255,255,255,0.05);
-    border: none;
-    color: #fff;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    transition: background 0.2s;
-  }
-
-  .right-buttons .btn-icon:hover {
-    background: rgba(255,255,255,0.15);
-  }
-
-  .right-buttons .btn-icon svg {
-    width: 18px;
-    height: 18px;
-    fill: white;
-  }
-
-  /* ===== وضعیت بارگذاری ===== */
-  .center-status {
+  .loading {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 5;
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     gap: 16px;
     color: #aaa;
-    pointer-events: none;
   }
 
-  .center-status.hidden {
-    display: none;
+  .loading.show {
+    display: flex;
   }
 
   .spinner {
@@ -252,296 +169,185 @@
     to { transform: rotate(360deg); }
   }
 
-  .center-status .loading-text {
-    font-size: 14px;
-    color: #888;
-  }
-
-  /* ===== خطا ===== */
-  .error-overlay {
+  .controls {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
     bottom: 0;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0,0,0,0.85);
-    z-index: 20;
-    padding: 30px;
-    text-align: center;
-  }
-
-  .error-overlay.show {
-    display: flex;
-  }
-
-  .error-overlay h3 {
-    color: #ff6b6b;
-    font-size: 20px;
-    margin-bottom: 10px;
-  }
-
-  .error-overlay p {
-    color: #aaa;
-    font-size: 15px;
-    max-width: 360px;
-    line-height: 1.8;
-  }
-
-  .error-overlay .btn-retry {
-    margin-top: 20px;
-    background: #e0a94a;
-    color: #000;
-    border: none;
-    padding: 12px 30px;
-    border-radius: 10px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .error-overlay .btn-retry:hover {
-    background: #f0b95a;
-  }
-
-  .error-overlay a {
-    color: #e0a94a;
-    text-decoration: none;
-    margin-top: 12px;
-  }
-
-  /* ===== تاپ بار ===== */
-  .topbar {
-    position: absolute;
-    top: 0;
     left: 0;
     right: 0;
-    padding: 16px 20px;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
-    z-index: 5;
-    transition: opacity 0.4s;
-    pointer-events: none;
+    padding: 20px;
+    background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+    z-index: 6;
+    opacity: 0;
+    transition: opacity 0.4s ease;
   }
 
-  .topbar a {
-    pointer-events: auto;
-    color: #fff;
-    text-decoration: none;
-    font-size: 14px;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    opacity: 0.7;
-  }
-
-  .topbar a:hover {
+  .controls.visible {
     opacity: 1;
   }
 
-  .topbar .film-name {
-    font-size: 15px;
-    font-weight: 600;
-    margin-top: 4px;
-    color: #fff;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 80%;
+  .controls .progress-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    direction: ltr;
+  }
+
+  .controls .time {
+    font-size: 12px;
+    color: #aaa;
+    min-width: 45px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .controls .progress-bar {
+    flex: 1;
+    height: 3px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 2px;
+    position: relative;
+    cursor: pointer;
+  }
+
+  .controls .progress-fill {
+    height: 100%;
+    background: #e0a94a;
+    border-radius: 2px;
+    width: 0%;
   }
 
   @media (max-width: 600px) {
-    .controls {
-      padding: 12px 12px 20px;
-    }
-    .btn {
-      font-size: 18px;
-      min-width: 36px;
-      min-height: 36px;
-      padding: 6px 8px;
-    }
-    .btn-play {
-      width: 48px;
-      height: 48px;
-      font-size: 26px;
-    }
-    .btn-skip svg {
-      width: 22px;
-      height: 22px;
-    }
-    .time-current,
-    .time-duration {
-      font-size: 10px;
-      min-width: 35px;
-    }
-    .right-buttons {
-      right: 12px;
-      bottom: 80px;
-    }
-    .right-buttons .btn-icon {
-      width: 30px;
-      height: 30px;
-      font-size: 14px;
-    }
-    .right-buttons .btn-icon svg {
-      width: 15px;
-      height: 15px;
-    }
-  }
-
-  :-webkit-full-screen .controls {
-    padding-bottom: 40px;
-  }
-  :-moz-full-screen .controls {
-    padding-bottom: 40px;
-  }
-  :fullscreen .controls {
-    padding-bottom: 40px;
+    .info .title { font-size: 24px; }
+    .info .description { font-size: 14px; }
+    .play-btn { width: 60px; height: 60px; }
+    .play-btn svg { width: 28px; height: 28px; }
+    .info { bottom: 100px; padding: 0 16px; }
   }
 </style>
 </head>
 <body>
 
-<div class="player-container" id="container">
+<div class="container" id="container">
   
-  <!-- ===== ویدیو بدون کنترل پیش‌فرض ===== -->
-  <video 
-    id="player" 
-    autoplay 
-    playsinline
-    preload="metadata"
-    crossorigin="anonymous"
-  ></video>
+  <div class="poster-container" id="posterContainer">
+    <img id="posterImage" src="" alt="پوستر فیلم" />
+  </div>
 
-  <!-- ===== وضعیت بارگذاری ===== -->
-  <div class="center-status" id="centerStatus">
+  <div class="overlay"></div>
+
+  <button class="play-btn" id="playBtn">
+    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+  </button>
+
+  <div class="info" id="info">
+    <div class="title" id="title">فیلم</div>
+    <div class="description" id="description">در حال بارگذاری...</div>
+  </div>
+
+  <video id="player" controls autoplay playsinline crossorigin="anonymous"></video>
+
+  <div class="loading" id="loading">
     <div class="spinner"></div>
-    <div class="loading-text">در حال بارگذاری...</div>
+    <div>در حال بارگذاری فیلم...</div>
   </div>
 
-  <!-- ===== تاپ بار ===== -->
-  <div class="topbar" id="topbar">
-    <a href="/movies.html">‹ برگشت</a>
-    <div class="film-name" id="filmName">فیلم</div>
-  </div>
-
-  <!-- ===== دکمه‌های سمت راست (صدا، ۳ نقطه، تمام صفحه) ===== -->
-  <div class="right-buttons" id="rightButtons">
-    <!-- دکمه صدا -->
-    <button class="btn-icon" id="btnMute" title="صدا">
-      <svg viewBox="0 0 24 24">
-        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-      </svg>
-    </button>
-
-    <!-- دکمه تمام صفحه -->
-    <button class="btn-icon" id="btnFullscreen" title="تمام صفحه">
-      <svg viewBox="0 0 24 24">
-        <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-      </svg>
-    </button>
-  </div>
-
-  <!-- ===== کنترل‌های سفارشی پایین ===== -->
   <div class="controls" id="controls">
     <div class="progress-container">
-      <span class="time-current" id="timeCurrent">00:00</span>
+      <span class="time" id="timeCurrent">00:00</span>
       <div class="progress-bar" id="progressBar">
-        <div class="progress-buffer" id="progressBuffer"></div>
-        <div class="progress-fill" id="progressFill">
-          <span class="progress-dot"></span>
-        </div>
+        <div class="progress-fill" id="progressFill"></div>
       </div>
-      <span class="time-duration" id="timeDuration">00:00</span>
+      <span class="time" id="timeDuration">00:00</span>
     </div>
-
-    <div class="buttons">
-      <!-- عقب ۱۰ ثانیه -->
-      <button class="btn btn-skip" id="btnSkipBack" title="۱۰ ثانیه عقب">
-        <svg viewBox="0 0 24 24">
-          <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
-        </svg>
-      </button>
-
-      <!-- پخش/توقف -->
-      <button class="btn btn-play" id="btnPlay">▶</button>
-
-      <!-- جلو ۱۰ ثانیه -->
-      <button class="btn btn-skip" id="btnSkipForward" title="۱۰ ثانیه جلو">
-        <svg viewBox="0 0 24 24">
-          <path d="M13 18V6l8.5 6-8.5 6zm-.5-6l-8.5-6v12l8.5-6z"/>
-        </svg>
-      </button>
-    </div>
-  </div>
-
-  <!-- ===== خطا ===== -->
-  <div class="error-overlay" id="errorOverlay">
-    <h3>⚠️ خطا در پخش</h3>
-    <p id="errorText">مشکلی در پخش فیلم پیش آمد.</p>
-    <button class="btn-retry" id="btnRetry">🔄 تلاش مجدد</button>
-    <a href="/movies.html">← برگشت به لیست فیلم‌ها</a>
   </div>
 
 </div>
 
 <script>
-// ============================================================
-// 🎬 PLAYER - فقط کنترل‌های سفارشی
-// ============================================================
-
-const video = document.getElementById('player');
-const container = document.getElementById('container');
-
-const controls = document.getElementById('controls');
-const progressBar = document.getElementById('progressBar');
-const progressFill = document.getElementById('progressFill');
-const progressBuffer = document.getElementById('progressBuffer');
-const timeCurrent = document.getElementById('timeCurrent');
-const timeDuration = document.getElementById('timeDuration');
-const btnPlay = document.getElementById('btnPlay');
-const btnSkipBack = document.getElementById('btnSkipBack');
-const btnSkipForward = document.getElementById('btnSkipForward');
-const btnMute = document.getElementById('btnMute');
-const btnFullscreen = document.getElementById('btnFullscreen');
-const centerStatus = document.getElementById('centerStatus');
-const errorOverlay = document.getElementById('errorOverlay');
-const errorText = document.getElementById('errorText');
-const btnRetry = document.getElementById('btnRetry');
-const filmName = document.getElementById('filmName');
-
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 
+const posterImage = document.getElementById('posterImage');
+const titleEl = document.getElementById('title');
+const descriptionEl = document.getElementById('description');
+const playBtn = document.getElementById('playBtn');
+const video = document.getElementById('player');
+const loading = document.getElementById('loading');
+const controls = document.getElementById('controls');
+const progressFill = document.getElementById('progressFill');
+const timeCurrent = document.getElementById('timeCurrent');
+const timeDuration = document.getElementById('timeDuration');
+const progressBar = document.getElementById('progressBar');
+
 if (!id) {
-  showError('لینک فیلم ناقص است.');
+  document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#aaa;">لینک ناقص است</div>';
 }
 
-filmName.textContent = decodeURIComponent(id || 'فیلم');
+titleEl.textContent = decodeURIComponent(id);
+descriptionEl.textContent = 'در حال بارگذاری پوستر...';
 
-const SKIP_SECONDS = 10;
-let controlsTimeout = null;
-let isControlsVisible = false;
-let retryCount = 0;
-const MAX_RETRY = 3;
+async function loadPoster() {
+  try {
+    const response = await fetch(`/api/poster/${encodeURIComponent(id)}`);
+    if (response.ok) {
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      posterImage.src = url;
+      posterImage.onload = () => {
+        posterImage.classList.add('loaded');
+        descriptionEl.textContent = 'برای شروع، روی دکمه پخش کلیک کنید';
+      };
+    } else {
+      posterImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"%3E%3Crect fill="%23191a20" width="400" height="600"/%3E%3Ctext x="200" y="300" font-family="sans-serif" font-size="40" fill="%238d8b86" text-anchor="middle" dominant-baseline="central"%3E🎬%3C/text%3E%3C/svg%3E';
+      posterImage.classList.add('loaded');
+      descriptionEl.textContent = 'پوستری برای این فیلم وجود ندارد';
+    }
+  } catch (err) {
+    console.error('Error loading poster:', err);
+  }
+}
 
-// ============================================================
-// 🎯 بارگذاری فیلم
-// ============================================================
-function loadVideo() {
+loadPoster();
+
+playBtn.addEventListener('click', () => {
+  document.querySelector('.poster-container').style.display = 'none';
+  document.querySelector('.overlay').style.display = 'none';
+  document.querySelector('.info').style.display = 'none';
+  playBtn.style.display = 'none';
+  
+  video.classList.add('playing');
   video.src = `/api/stream/${encodeURIComponent(id)}`;
   video.load();
   video.play();
-  centerStatus.classList.remove('hidden');
-}
+  
+  loading.classList.add('show');
+});
 
-loadVideo();
+video.addEventListener('loadeddata', () => {
+  loading.classList.remove('show');
+  controls.classList.add('visible');
+  timeDuration.textContent = formatTime(video.duration);
+});
 
-// ============================================================
-// ⏱️ تبدیل زمان
-// ============================================================
+video.addEventListener('timeupdate', () => {
+  const percent = (video.currentTime / video.duration) * 100;
+  progressFill.style.width = percent + '%';
+  timeCurrent.textContent = formatTime(video.currentTime);
+});
+
+video.addEventListener('play', () => {
+  loading.classList.remove('show');
+});
+
+video.addEventListener('waiting', () => {
+  loading.classList.add('show');
+});
+
+progressBar.addEventListener('click', (e) => {
+  const rect = progressBar.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  video.currentTime = x * video.duration;
+});
+
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds < 0) return '00:00';
   const m = Math.floor(seconds / 60);
@@ -549,260 +355,18 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// ============================================================
-// 📊 آپدیت نوار پیشرفت
-// ============================================================
-function updateProgress() {
-  if (!video.duration) return;
-  
-  const percent = (video.currentTime / video.duration) * 100;
-  progressFill.style.width = percent + '%';
-  timeCurrent.textContent = formatTime(video.currentTime);
-  timeDuration.textContent = formatTime(video.duration);
-
-  if (video.buffered.length > 0) {
-    const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-    const bufferPercent = (bufferedEnd / video.duration) * 100;
-    progressBuffer.style.width = bufferPercent + '%';
-  }
-}
-
-video.addEventListener('timeupdate', updateProgress);
-video.addEventListener('progress', updateProgress);
-
-// ============================================================
-// ▶️ دکمه پخش/توقف
-// ============================================================
-function togglePlay() {
-  if (video.paused) {
-    video.play();
-    btnPlay.textContent = '⏸';
-  } else {
-    video.pause();
-    btnPlay.textContent = '▶';
-  }
-}
-
-btnPlay.addEventListener('click', togglePlay);
-
-video.addEventListener('play', () => {
-  btnPlay.textContent = '⏸';
-  centerStatus.classList.add('hidden');
-});
-
-video.addEventListener('pause', () => {
-  btnPlay.textContent = '▶';
-});
-
-// ============================================================
-// ⏪ ⏩ دکمه‌های ۱۰ ثانیه
-// ============================================================
-btnSkipBack.addEventListener('click', () => {
-  video.currentTime = Math.max(0, video.currentTime - SKIP_SECONDS);
-});
-
-btnSkipForward.addEventListener('click', () => {
-  video.currentTime = Math.min(video.duration, video.currentTime + SKIP_SECONDS);
-});
-
-// ============================================================
-// 📍 کلیک روی نوار پیشرفت (Seek)
-// ============================================================
-progressBar.addEventListener('click', (e) => {
-  const rect = progressBar.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / rect.width;
-  video.currentTime = x * video.duration;
-});
-
-// ============================================================
-// 🔇 دکمه صدا
-// ============================================================
-let isMuted = false;
-
-btnMute.addEventListener('click', () => {
-  isMuted = !isMuted;
-  video.muted = isMuted;
-  btnMute.innerHTML = isMuted ? `
-    <svg viewBox="0 0 24 24">
-      <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM9.5 12l-5-5H3v10h4l5 5V7.5L9.5 12zm2 2.83L9.83 13 7 15.17V9.83L9.83 7 11 8.17v6.66z"/>
-    </svg>
-  ` : `
-    <svg viewBox="0 0 24 24">
-      <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-    </svg>
-  `;
-});
-
-// ============================================================
-// 🖥️ دکمه تمام صفحه
-// ============================================================
-btnFullscreen.addEventListener('click', () => {
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  } else {
-    container.requestFullscreen?.();
-  }
-});
-
-document.addEventListener('fullscreenchange', () => {
-  btnFullscreen.innerHTML = document.fullscreenElement ? `
-    <svg viewBox="0 0 24 24">
-      <path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/>
-    </svg>
-  ` : `
-    <svg viewBox="0 0 24 24">
-      <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-    </svg>
-  `;
-});
-
-// ============================================================
-// 🎮 نمایش/مخفی کردن کنترل‌ها
-// ============================================================
-function showControls() {
-  controls.classList.add('visible');
-  document.getElementById('rightButtons').style.opacity = '1';
-  isControlsVisible = true;
-  clearTimeout(controlsTimeout);
-  controlsTimeout = setTimeout(() => {
-    hideControls();
-  }, 4000);
-}
-
-function hideControls() {
-  if (centerStatus.classList.contains('hidden')) {
-    controls.classList.remove('visible');
-    document.getElementById('rightButtons').style.opacity = '0';
-    isControlsVisible = false;
-  }
-}
-
-// تنظیم opacity برای دکمه‌های راست
-document.getElementById('rightButtons').style.transition = 'opacity 0.4s ease';
-document.getElementById('rightButtons').style.opacity = '0';
-
-container.addEventListener('click', (e) => {
-  if (e.target.closest('.controls') || e.target.closest('.topbar') || e.target.closest('.right-buttons')) return;
-  if (errorOverlay.classList.contains('show')) return;
-  
-  if (isControlsVisible) {
-    hideControls();
-  } else {
-    showControls();
-  }
-});
-
-container.addEventListener('mousemove', () => {
-  if (!errorOverlay.classList.contains('show')) {
-    showControls();
-  }
-});
-
-container.addEventListener('touchstart', () => {
-  if (!errorOverlay.classList.contains('show')) {
-    showControls();
-  }
-});
-
-setTimeout(showControls, 1000);
-
-// ============================================================
-// 🔄 مدیریت بافر
-// ============================================================
-video.addEventListener('waiting', () => {
-  centerStatus.classList.remove('hidden');
-  centerStatus.querySelector('.loading-text').textContent = 'در حال بارگیری ...';
-});
-
-video.addEventListener('canplay', () => {
-  centerStatus.classList.add('hidden');
-});
-
-video.addEventListener('playing', () => {
-  centerStatus.classList.add('hidden');
-});
-
-// ============================================================
-// ❌ مدیریت خطا
-// ============================================================
-function showError(msg) {
-  errorOverlay.classList.add('show');
-  errorText.textContent = msg || 'مشکلی در پخش فیلم پیش آمد.';
-  controls.classList.remove('visible');
-  document.getElementById('rightButtons').style.opacity = '0';
-  centerStatus.classList.add('hidden');
-}
-
-function hideError() {
-  errorOverlay.classList.remove('show');
-}
-
-btnRetry.addEventListener('click', () => {
-  hideError();
-  retryCount = 0;
-  loadVideo();
-});
-
-video.addEventListener('error', (e) => {
-  console.error('Video error:', e);
-  
-  const errorCode = video.error?.code;
-  
-  if (errorCode === 2 && retryCount < MAX_RETRY) {
-    retryCount++;
-    console.log(`🔄 تلاش مجدد ${retryCount}/${MAX_RETRY}...`);
-    centerStatus.classList.remove('hidden');
-    centerStatus.querySelector('.loading-text').textContent = `🔄 تلاش مجدد (${retryCount}/${MAX_RETRY})...`;
-    
-    setTimeout(() => {
-      video.load();
-      video.play();
-    }, 2000);
-    return;
-  }
-  
-  showError('این فیلم پیدا نشد یا پخشش با مشکل مواجه شد.');
-});
-
-video.addEventListener('stalled', () => {
-  console.log('⚠️ پخش متوقف شد، تلاش مجدد...');
-  if (!video.paused) {
-    video.play();
-  }
-});
-
-// ============================================================
-// ⌨️ کیبورد شورت‌کات
-// ============================================================
 document.addEventListener('keydown', (e) => {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  
-  switch(e.key) {
-    case ' ':
-      e.preventDefault();
-      togglePlay();
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      video.currentTime = Math.min(video.duration, video.currentTime + 10);
-      break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      video.currentTime = Math.max(0, video.currentTime - 10);
-      break;
-    case 'f':
-    case 'F':
-      btnFullscreen.click();
-      break;
-    case 'm':
-    case 'M':
-      btnMute.click();
-      break;
+  if (e.key === ' ' || e.key === 'Space') {
+    e.preventDefault();
+    if (!video.classList.contains('playing')) {
+      playBtn.click();
+    } else if (video.paused) {
+      video.play();
+    } else {
+      video.pause();
+    }
   }
 });
-
-console.log('🎬 Player loaded successfully!');
-console.log(`📺 Film: ${id}`);
 </script>
 
 </body>
