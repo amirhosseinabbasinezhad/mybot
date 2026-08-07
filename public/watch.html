@@ -25,6 +25,66 @@
     overflow: hidden;
   }
 
+  /* ===== نوار بالایی (دکمه برگشت + اسم فیلم) ===== */
+  .topbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 16px 20px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    pointer-events: none;
+  }
+
+  .topbar * {
+    pointer-events: auto;
+  }
+
+  .topbar .btn-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 10px;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.05);
+    transition: all 0.3s ease;
+    font-family: "Vazirmatn", Tahoma, sans-serif;
+  }
+
+  .topbar .btn-back:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(224,169,74,0.3);
+  }
+
+  .topbar .btn-back svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+  }
+
+  .topbar .film-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 60%;
+    direction: ltr;
+    text-align: left;
+  }
+
   .poster-container {
     position: absolute;
     top: 0;
@@ -74,6 +134,7 @@
     margin-bottom: 12px;
     text-shadow: 0 4px 20px rgba(0,0,0,0.8);
     text-align: center;
+    display: none; /* مخفی چون اسم فیلم بالا نمایش داده میشه */
   }
 
   .info .description {
@@ -215,11 +276,21 @@
   }
 
   @media (max-width: 600px) {
-    .info .title { font-size: 24px; }
     .info .description { font-size: 14px; }
     .play-btn { width: 60px; height: 60px; }
     .play-btn svg { width: 28px; height: 28px; }
     .info { bottom: 100px; padding: 0 16px; }
+    .topbar {
+      padding: 12px 14px;
+    }
+    .topbar .btn-back {
+      font-size: 12px;
+      padding: 6px 10px;
+    }
+    .topbar .film-title {
+      font-size: 13px;
+      max-width: 50%;
+    }
   }
 </style>
 </head>
@@ -227,6 +298,15 @@
 
 <div class="container" id="container">
   
+  <!-- ===== نوار بالایی: دکمه برگشت + اسم فیلم ===== -->
+  <div class="topbar" id="topbar">
+    <a href="/movies.html" class="btn-back">
+      <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+      برگشت
+    </a>
+    <span class="film-title" id="filmTitle">در حال بارگذاری...</span>
+  </div>
+
   <div class="poster-container" id="posterContainer">
     <img id="posterImage" src="" alt="پوستر فیلم" />
   </div>
@@ -238,8 +318,7 @@
   </button>
 
   <div class="info" id="info">
-    <div class="title" id="title">فیلم</div>
-    <div class="description" id="description">در حال بارگذاری...</div>
+    <div class="description" id="description">در حال دریافت اطلاعات فیلم...</div>
   </div>
 
   <video id="player" controls autoplay playsinline crossorigin="anonymous"></video>
@@ -270,11 +349,13 @@ async function refreshAccessToken() {
   const refreshToken = localStorage.getItem('refreshToken');
   
   if (!refreshToken) {
+    console.log('❌ Refresh Token وجود ندارد');
     window.location.href = '/login.html';
     return null;
   }
 
   try {
+    console.log('🔄 تمدید توکن...');
     const response = await fetch('/api/auth?action=refresh', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -288,6 +369,7 @@ async function refreshAccessToken() {
     }
 
     localStorage.setItem('accessToken', data.accessToken);
+    console.log('✅ توکن تمدید شد');
     return data.accessToken;
 
   } catch (err) {
@@ -304,6 +386,7 @@ async function fetchWithAuth(url, options = {}) {
   let accessToken = localStorage.getItem('accessToken');
   
   if (!accessToken) {
+    console.log('❌ توکن وجود ندارد');
     window.location.href = '/login.html';
     return;
   }
@@ -334,6 +417,7 @@ async function fetchWithAuth(url, options = {}) {
 
 const token = localStorage.getItem('accessToken');
 if (!token) {
+  console.log('❌ توکن وجود ندارد، رفتن به لاگین');
   window.location.href = '/login.html';
 }
 
@@ -344,8 +428,10 @@ if (!token) {
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
 
+console.log('🎬 فیلم درخواستی:', id);
+
 const posterImage = document.getElementById('posterImage');
-const titleEl = document.getElementById('title');
+const filmTitle = document.getElementById('filmTitle');
 const descriptionEl = document.getElementById('description');
 const playBtn = document.getElementById('playBtn');
 const video = document.getElementById('player');
@@ -361,14 +447,22 @@ if (!id) {
 }
 
 // ============================================================
-// 📥 دریافت اطلاعات فیلم (با fetchWithAuth)
+// 📥 دریافت اطلاعات فیلم
 // ============================================================
 async function loadMovieInfo() {
   try {
+    console.log('📥 دریافت اطلاعات فیلم:', id);
     const response = await fetchWithAuth(`/api/movie-info/${encodeURIComponent(id)}`);
-    if (!response) return;
+    
+    if (!response) {
+      console.log('❌ پاسخ دریافت نشد');
+      return;
+    }
+    
+    console.log('📊 وضعیت پاسخ:', response.status);
     
     if (response.status === 401) {
+      console.log('❌ توکن نامعتبر');
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       window.location.href = '/login.html';
@@ -377,15 +471,20 @@ async function loadMovieInfo() {
     
     if (response.ok) {
       const data = await response.json();
-      titleEl.textContent = data.name.replace(/-/g, ' ');
+      console.log('✅ اطلاعات فیلم دریافت شد:', data);
+      
+      // نمایش اسم فیلم در نوار بالا (با فاصله به جای -)
+      const displayName = data.name.replace(/-/g, ' ');
+      filmTitle.textContent = displayName;
       descriptionEl.textContent = data.description || 'بدون توضیحات';
     } else {
-      titleEl.textContent = decodeURIComponent(id).replace(/-/g, ' ');
+      console.log('❌ خطا در دریافت اطلاعات:', response.status);
+      filmTitle.textContent = decodeURIComponent(id).replace(/-/g, ' ');
       descriptionEl.textContent = 'توضیحاتی برای این فیلم موجود نیست';
     }
   } catch (err) {
-    console.error('Error loading movie info:', err);
-    titleEl.textContent = decodeURIComponent(id).replace(/-/g, ' ');
+    console.error('❌ خطا:', err);
+    filmTitle.textContent = decodeURIComponent(id).replace(/-/g, ' ');
     descriptionEl.textContent = 'خطا در بارگذاری توضیحات';
   }
 }
@@ -397,20 +496,24 @@ loadMovieInfo();
 // ============================================================
 async function loadPoster() {
   try {
+    console.log('🖼️ دریافت پوستر:', id);
     const response = await fetch(`/api/poster/${encodeURIComponent(id)}`);
+    
     if (response.ok) {
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       posterImage.src = url;
       posterImage.onload = () => {
         posterImage.classList.add('loaded');
+        console.log('✅ پوستر بارگذاری شد');
       };
     } else {
+      console.log('⚠️ پوستر وجود ندارد');
       posterImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"%3E%3Crect fill="%23191a20" width="400" height="600"/%3E%3Ctext x="200" y="300" font-family="sans-serif" font-size="40" fill="%238d8b86" text-anchor="middle" dominant-baseline="central"%3E🎬%3C/text%3E%3C/svg%3E';
       posterImage.classList.add('loaded');
     }
   } catch (err) {
-    console.error('Error loading poster:', err);
+    console.error('❌ خطا در دریافت پوستر:', err);
     posterImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"%3E%3Crect fill="%23191a20" width="400" height="600"/%3E%3Ctext x="200" y="300" font-family="sans-serif" font-size="40" fill="%238d8b86" text-anchor="middle" dominant-baseline="central"%3E🎬%3C/text%3E%3C/svg%3E';
     posterImage.classList.add('loaded');
   }
