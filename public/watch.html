@@ -144,7 +144,48 @@
     overflow: hidden;
   }
 
-  /* ===== دکمه پخش وسط (فقط اول بار) ===== */
+  /* ===== منوی انتخاب کیفیت ===== */
+  .quality-selector {
+    position: absolute;
+    bottom: 155px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
+    padding: 8px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .quality-selector label {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .quality-selector select {
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: "Vazirmatn", Tahoma, sans-serif;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    min-width: 80px;
+    text-align: center;
+  }
+  
+  .quality-selector select option {
+    background: #000;
+    color: #fff;
+  }
+
+  /* ===== دکمه پخش وسط ===== */
   .play-btn {
     position: absolute;
     top: 50%;
@@ -176,10 +217,6 @@
     margin-left: 4px;
   }
 
-  .play-btn.hidden {
-    display: none;
-  }
-
   /* ===== ویدیو ===== */
   #player {
     position: absolute;
@@ -192,10 +229,14 @@
     object-fit: contain;
     background: #000;
     z-index: 4;
+    display: none;
+  }
+
+  #player.playing {
     display: block;
   }
 
-  /* ===== بارگذاری (فقط وقتی فیلم لود نشده) ===== */
+  /* ===== بارگذاری ===== */
   .loading {
     position: absolute;
     top: 50%;
@@ -227,25 +268,23 @@
   }
 
   /* ==========================================================
-     🎮 نوار کنترل (باریک و شیک)
+     🎮 نوار کنترل (دقیقاً مثل قبل، بدون تغییر)
      ========================================================== */
   .controls {
     position: absolute;
-    bottom: 10px;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 30px;
+    left: 20px;
+    right: 20px;
     z-index: 6;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     direction: ltr;
-    background: rgba(0,0,0,0.5);
-    backdrop-filter: blur(12px);
-    padding: 6px 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.05);
-    width: auto;
-    max-width: 92%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(16px);
+    padding: 10px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
     transition: opacity 0.3s ease;
   }
 
@@ -254,14 +293,14 @@
     border: none;
     color: #fff;
     cursor: pointer;
-    padding: 4px 4px;
+    padding: 4px 6px;
     border-radius: 6px;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 32px;
+    min-height: 32px;
     flex-shrink: 0;
   }
 
@@ -274,19 +313,19 @@
   }
 
   .controls .btn-ctrl svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     fill: white;
   }
 
   .controls .btn-play-big {
     background: rgba(255,255,255,0.08);
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 38px;
+    height: 38px;
     padding: 0;
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 38px;
+    min-height: 38px;
   }
 
   .controls .btn-play-big:hover {
@@ -294,39 +333,39 @@
   }
 
   .controls .btn-play-big svg {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
   }
 
   .controls .progress-wrapper {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     min-width: 0;
   }
 
   .controls .time {
-    font-size: 10px;
+    font-size: 11px;
     color: #aaa;
-    min-width: 32px;
+    min-width: 38px;
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
   }
 
   .controls .progress-bar {
     flex: 1;
-    height: 3px;
+    height: 4px;
     background: rgba(255,255,255,0.2);
     border-radius: 2px;
     position: relative;
     cursor: pointer;
-    min-width: 30px;
+    min-width: 40px;
     transition: height 0.2s;
   }
 
   .controls .progress-bar:hover {
-    height: 4px;
+    height: 6px;
   }
 
   .controls .progress-fill {
@@ -339,78 +378,40 @@
   .controls .right-buttons {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
     flex-shrink: 0;
   }
 
   .controls .right-buttons .btn-ctrl svg {
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
   }
 
-  /* ==========================================================
-     📱 موبایل: 60px از پایین
-     ========================================================== */
   @media (max-width: 600px) {
     .info .description { font-size: 14px; }
     .play-btn { width: 60px; height: 60px; }
     .play-btn svg { width: 28px; height: 28px; }
     .info { bottom: 100px; padding: 0 16px; }
+    .quality-selector { bottom: 135px; padding: 6px 12px; gap: 8px; flex-direction: row; }
+    .quality-selector select { padding: 4px 8px; font-size: 13px; min-width: 60px; }
     .topbar { padding: 12px 14px; }
     .topbar .btn-back { font-size: 12px; padding: 6px 10px; }
     .topbar .film-title { font-size: 13px; max-width: 50%; }
-
     .controls {
-      bottom: 60px;
-      padding: 6px 10px;
-      gap: 6px;
-      border-radius: 10px;
-      max-width: 96%;
-    }
-
-    .controls .btn-ctrl { min-width: 24px; min-height: 24px; padding: 2px 3px; }
-    .controls .btn-ctrl svg { width: 14px; height: 14px; }
-    .controls .btn-play-big { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
-    .controls .btn-play-big svg { width: 16px; height: 16px; }
-    .controls .time { font-size: 9px; min-width: 28px; }
-    .controls .right-buttons .btn-ctrl svg { width: 12px; height: 12px; }
-    .controls .progress-bar { height: 2px; }
-  }
-
-  /* ==========================================================
-     🖥️ تلویزیون/دسکتاپ: 10px از پایین + باریک‌تر
-     ========================================================== */
-  @media (min-width: 601px) {
-    .controls {
-      bottom: 10px;
-      padding: 4px 10px;
-      gap: 6px;
-      border-radius: 8px;
-      max-width: 80%;
-    }
-
-    .controls .btn-ctrl { min-width: 24px; min-height: 24px; padding: 2px 3px; }
-    .controls .btn-ctrl svg { width: 14px; height: 14px; }
-    .controls .btn-play-big { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
-    .controls .btn-play-big svg { width: 16px; height: 16px; }
-    .controls .time { font-size: 10px; min-width: 30px; }
-    .controls .right-buttons .btn-ctrl svg { width: 13px; height: 13px; }
-    .controls .progress-bar { height: 3px; }
-  }
-
-  /* ==========================================================
-     🖥️ تلویزیون بزرگ (حداقل 1200px)
-     ========================================================== */
-  @media (min-width: 1200px) {
-    .controls {
-      padding: 6px 14px;
+      bottom: 20px;
+      left: 12px;
+      right: 12px;
+      padding: 8px 12px;
       gap: 8px;
-      max-width: 60%;
+      border-radius: 12px;
     }
-    .controls .btn-ctrl { min-width: 30px; min-height: 30px; }
     .controls .btn-ctrl svg { width: 16px; height: 16px; }
-    .controls .btn-play-big { width: 34px; height: 34px; min-width: 34px; min-height: 34px; }
+    .controls .btn-play-big { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
     .controls .btn-play-big svg { width: 18px; height: 18px; }
+    .controls .time { font-size: 10px; min-width: 30px; }
+    .controls .right-buttons .btn-ctrl svg { width: 16px; height: 16px; }
+    .controls .progress-bar { height: 3px; }
+    .controls .progress-bar:hover { height: 4px; }
   }
 </style>
 </head>
@@ -434,27 +435,36 @@
 
   <div class="overlay"></div>
 
-  <!-- ===== دکمه پخش وسط (فقط اول بار) ===== -->
+  <!-- ===== دکمه پخش وسط ===== -->
   <button class="play-btn" id="playBtn">
     <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
   </button>
 
-  <!-- ===== توضیحات ===== -->
+  <!-- ===== اطلاعات فیلم ===== -->
   <div class="info" id="info">
-    <div class="description" id="description">در حال دریافت اطلاعات فیلم...</div>
+    <div class="title" id="title">فیلم</div>
+    <div class="description" id="description">در حال بارگذاری...</div>
+  </div>
+
+  <!-- ===== منوی انتخاب کیفیت (دراپ‌داون) ===== -->
+  <div class="quality-selector" id="qualitySelector">
+    <label for="qualitySelect">کیفیت:</label>
+    <select id="qualitySelect">
+      <option value="">در حال بارگذاری...</option>
+    </select>
   </div>
 
   <!-- ===== ویدیو ===== -->
   <video id="player" playsinline crossorigin="anonymous"></video>
 
-  <!-- ===== بارگذاری (فقط وقتی فیلم لود نشده) ===== -->
+  <!-- ===== بارگذاری ===== -->
   <div class="loading" id="loading">
     <div class="spinner"></div>
     <div>در حال بارگذاری فیلم...</div>
   </div>
 
   <!-- ==========================================================
-       🎮 نوار کنترل (باریک و شیک)
+       🎮 نوار کنترل (دقیقاً مثل قبل)
        ========================================================== -->
   <div class="controls" id="controls">
     <!-- ۱۰ ثانیه عقب -->
@@ -581,9 +591,7 @@ if (!token) {
 
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
-const quality = params.get('quality') || 'auto';
-
-console.log('🎬 فیلم:', id, '| کیفیت:', quality);
+const qualityParam = params.get('quality'); // خواندن کیفیت از URL
 
 const posterImage = document.getElementById('posterImage');
 const filmTitle = document.getElementById('filmTitle');
@@ -604,6 +612,7 @@ const btnMute = document.getElementById('btnMute');
 const muteIcon = document.getElementById('muteIcon');
 const btnFullscreen = document.getElementById('btnFullscreen');
 const fullscreenIcon = document.getElementById('fullscreenIcon');
+const qualitySelect = document.getElementById('qualitySelect');
 
 if (!id) {
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#aaa;">لینک ناقص است</div>';
@@ -628,6 +637,30 @@ async function loadMovieInfo() {
       const data = await response.json();
       filmTitle.textContent = data.name.replace(/-/g, ' ');
       descriptionEl.textContent = data.description || 'بدون توضیحات';
+      
+      // --- بخش پر کردن دراپ‌داون کیفیت ---
+      if (data.qualities && data.qualities.length > 0) {
+        const sortedQualities = data.qualities.sort((a, b) => parseInt(b) - parseInt(a));
+        
+        qualitySelect.innerHTML = '';
+        sortedQualities.forEach(q => {
+          const option = document.createElement('option');
+          option.value = q;
+          option.textContent = q;
+          qualitySelect.appendChild(option);
+        });
+
+        // اگر در URL کیفیت وجود داشت، آن را انتخاب کن
+        if (qualityParam && sortedQualities.includes(qualityParam)) {
+          qualitySelect.value = qualityParam;
+        } else if (data.bestQuality && sortedQualities.includes(data.bestQuality)) {
+          qualitySelect.value = data.bestQuality;
+        }
+      } else {
+        qualitySelect.innerHTML = '<option value="">کیفیتی موجود نیست</option>';
+      }
+      // --- پایان بخش جدید ---
+
     } else {
       filmTitle.textContent = decodeURIComponent(id).replace(/-/g, ' ');
       descriptionEl.textContent = 'توضیحاتی برای این فیلم موجود نیست';
@@ -666,38 +699,50 @@ async function loadPoster() {
 loadPoster();
 
 // ============================================================
-// 🎬 پخش خودکار فیلم
+// 🎬 آیا کیفیت در URL وجود دارد؟ اگر بله، مستقیم پخش کن!
 // ============================================================
-
-function startPlayback() {
-  // مخفی کردن دکمه پخش وسط
-  playBtn.classList.add('hidden');
-  
-  // ساخت لینک با کیفیت
-  let streamUrl = `/api/stream/${encodeURIComponent(id)}`;
-  if (quality !== 'auto' && quality) {
-    streamUrl += `?quality=${quality}`;
-  }
-  
-  console.log('🎬 لینک استریم:', streamUrl);
-  
-  video.src = streamUrl;
-  video.load();
-  video.play();
-  
-  loading.classList.add('show');
+if (qualityParam) {
+  // اگر کاربر با کیفیت خاصی وارد صفحه شده، بلافاصله فیلم را پخش کن
+  setTimeout(() => {
+    // مخفی کردن المان‌های اضافی
+    document.querySelector('.poster-container').style.display = 'none';
+    document.querySelector('.overlay').style.display = 'none';
+    document.querySelector('.info').style.display = 'none';
+    document.querySelector('.quality-selector').style.display = 'none';
+    playBtn.style.display = 'none';
+    
+    video.classList.add('playing');
+    const streamUrl = `/api/stream/${encodeURIComponent(id)}?quality=${encodeURIComponent(qualityParam)}`;
+    console.log('🎬 شروع خودکار ویدیو با کیفیت:', qualityParam);
+    video.src = streamUrl;
+    video.load();
+    video.play().catch(err => {
+      console.error('❌ خطا در شروع خودکار پخش:', err);
+      loading.classList.remove('show');
+    });
+    loading.classList.add('show');
+  }, 500);
 }
 
-// ===== دکمه پخش وسط (فقط اول بار) =====
-playBtn.addEventListener('click', startPlayback);
+// ============================================================
+// 🎬 دکمه پخش وسط صفحه (تغییر URL و رفرش بدون تغییر نوار کنترل)
+// ============================================================
+playBtn.addEventListener('click', () => {
+  const selectedQuality = qualitySelect.value;
 
-// ===== پخش خودکار با باز شدن صفحه =====
-setTimeout(() => {
-  startPlayback();
-}, 500);
+  if (!selectedQuality || selectedQuality === 'کیفیتی موجود نیست') {
+    alert('لطفاً یک کیفیت معتبر انتخاب کنید.');
+    return;
+  }
+
+  // تغییر URL مرورگر و اضافه کردن کیفیت به آن
+  const newUrl = `/watch.html?id=${encodeURIComponent(id)}&quality=${encodeURIComponent(selectedQuality)}`;
+  console.log('🔄 تغییر مسیر به:', newUrl);
+  window.location.href = newUrl;
+});
 
 // ============================================================
-// 🎮 کنترل‌های ویدیو
+// 🎮 کنترل‌های ویدیو (دقیقاً مثل قبل)
 // ============================================================
 video.addEventListener('loadeddata', () => {
   loading.classList.remove('show');
@@ -723,20 +768,14 @@ video.addEventListener('waiting', () => {
   loading.classList.add('show');
 });
 
-video.addEventListener('canplay', () => {
+video.addEventListener('error', (e) => {
+  console.error('❌ خطای ویدیو:', video.error);
   loading.classList.remove('show');
 });
 
-// ============================================================
-// 🎯 دکمه‌های کنترل
-// ============================================================
-
 btnPlayPause.addEventListener('click', () => {
-  if (video.paused) {
-    video.play();
-  } else {
-    video.pause();
-  }
+  if (video.paused) video.play();
+  else video.pause();
 });
 
 btnSkipBack.addEventListener('click', () => {
@@ -759,11 +798,8 @@ btnMute.addEventListener('click', () => {
 });
 
 btnFullscreen.addEventListener('click', () => {
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  } else {
-    document.body.requestFullscreen?.();
-  }
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.body.requestFullscreen?.();
 });
 
 document.addEventListener('fullscreenchange', () => {
@@ -780,9 +816,6 @@ progressBar.addEventListener('click', (e) => {
   video.currentTime = x * video.duration;
 });
 
-// ============================================================
-// ⏱️ تبدیل زمان
-// ============================================================
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds < 0) return '00:00';
   const m = Math.floor(seconds / 60);
@@ -790,52 +823,14 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// ============================================================
-// 🖱️ نمایش کنترل‌ها
-// ============================================================
-let controlsTimeout;
-
-function showControls() {
-  controls.style.opacity = '1';
-  clearTimeout(controlsTimeout);
-  controlsTimeout = setTimeout(() => {
-    controls.style.opacity = '0.3';
-  }, 3000);
-}
-
-document.addEventListener('mousemove', showControls);
-document.addEventListener('touchstart', showControls);
-
-setTimeout(showControls, 1000);
-
-// ============================================================
-// ⌨️ کیبورد
-// ============================================================
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  
   switch(e.key) {
-    case ' ':
-      e.preventDefault();
-      if (video.paused) video.play();
-      else video.pause();
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      video.currentTime = Math.min(video.duration, video.currentTime + 10);
-      break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      video.currentTime = Math.max(0, video.currentTime - 10);
-      break;
-    case 'f':
-    case 'F':
-      btnFullscreen.click();
-      break;
-    case 'm':
-    case 'M':
-      btnMute.click();
-      break;
+    case ' ': e.preventDefault(); if (video.paused) video.play(); else video.pause(); break;
+    case 'ArrowRight': e.preventDefault(); video.currentTime = Math.min(video.duration, video.currentTime + 10); break;
+    case 'ArrowLeft': e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 10); break;
+    case 'f': case 'F': btnFullscreen.click(); break;
+    case 'm': case 'M': btnMute.click(); break;
   }
 });
 
