@@ -1,9 +1,5 @@
 const { getDb } = require("../lib/db");
 
-// ============================================================
-// 📦 وضعیت‌های کاربر
-// ============================================================
-
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(200).send("OK");
@@ -26,7 +22,7 @@ module.exports = async (req, res) => {
   if (callback) console.log("[bot] 📞 Callback:", callback.data);
 
   // ============================================================
-  // 📞 مدیریت Callback (دکمه‌های شیشه‌ای)
+  // 📞 مدیریت Callback
   // ============================================================
   if (callback) {
     const data = callback.data;
@@ -53,7 +49,6 @@ module.exports = async (req, res) => {
         ]
       };
 
-      // حذف پیام قبلی (اختیاری)
       try {
         await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
           method: "POST",
@@ -83,6 +78,7 @@ module.exports = async (req, res) => {
         userId: fromId,
         status: 'waiting_for_movie_name',
         createdAt: new Date(),
+        qualities: {},
       });
 
       const keyboard = {
@@ -120,7 +116,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== دکمه "همه قسمت‌ها رو فرستادم" =====
+    // ===== دکمه "همه کیفیت‌ها رو فرستادم" =====
     if (data === 'all_qualities_sent') {
       const pending = await db.collection("pending_movies").findOne({
         userId: fromId,
@@ -133,16 +129,17 @@ module.exports = async (req, res) => {
         return;
       }
 
-      const qualities = ['360', '480', '720', '1080'];
-      const allExist = qualities.every(q => pending.qualities && pending.qualities[q]);
+      // چک کردن اینکه حداقل یک کیفیت ارسال شده
+      const sentQualities = pending.qualities || {};
+      const sentList = Object.keys(sentQualities);
 
-      if (!allExist) {
-        const missing = qualities.filter(q => !pending.qualities || !pending.qualities[q]);
-        await sendMessage(BOT_TOKEN, chatId, `❌ هنوز همه کیفیت‌ها رو نفرستادی!\nکیفیت‌های باقی‌مانده: ${missing.join(', ')}`);
+      if (sentList.length === 0) {
+        await sendMessage(BOT_TOKEN, chatId, '❌ هیچ کیفیتی ارسال نشده! لطفاً حداقل یک کیفیت بفرست.');
         res.status(200).json({ ok: true });
         return;
       }
 
+      // ذخیره نهایی فیلم
       await db.collection("movies").insertOne({
         name: pending.movieName,
         channelUsername: CHANNEL_USERNAME,
@@ -162,10 +159,19 @@ module.exports = async (req, res) => {
         ]
       };
 
+      // ساخت لیست کیفیت‌های ارسال شده
+      const qualityNames = {
+        '360': '۳۶۰p',
+        '480': '۴۸۰p',
+        '720': '۷۲۰p',
+        '1080': '۱۰۸۰p'
+      };
+      const qualityList = sentList.map(q => qualityNames[q] || q).join(', ');
+
       await sendMessage(BOT_TOKEN, chatId, 
         `✅ فیلم با موفقیت ذخیره شد!\n\n` +
         `🎬 ${pending.movieName}\n` +
-        `📺 کیفیت‌ها: 360p, 480p, 720p, 1080p\n` +
+        `📺 کیفیت‌های ارسال شده: ${qualityList}\n` +
         `🔗 لینک: ${link}`,
         keyboard
       );
@@ -198,7 +204,7 @@ module.exports = async (req, res) => {
       if (!pending.qualities) pending.qualities = {};
 
       if (pending.qualities[quality]) {
-        await sendMessage(BOT_TOKEN, chatId, `⏳ ${qualityMap[quality]} قبلاً ارسال شده. کیفیت بعدی رو بفرست.`);
+        await sendMessage(BOT_TOKEN, chatId, `⏳ ${qualityMap[quality]} قبلاً ارسال شده.`);
         res.status(200).json({ ok: true });
         return;
       }
@@ -216,7 +222,8 @@ module.exports = async (req, res) => {
 
       await sendMessage(BOT_TOKEN, chatId, 
         `📤 لطفاً فایل ${qualityMap[quality]} رو بفرست.\n\n` +
-        `(فایل ویدیویی با کیفیت ${quality}p)`,
+        `(فایل ویدیویی با کیفیت ${quality}p)\n\n` +
+        `💡 بعد از ارسال همه کیفیت‌ها، دکمه "همه کیفیت‌ها رو فرستادم" رو بزن.`,
         keyboard
       );
 
@@ -276,17 +283,15 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 📝 مدیریت متن (افزودن متن یا اسم فیلم)
+  // 📝 مدیریت متن
   // ============================================================
   if (text && !text.startsWith('/') && !hasFile && !hasPhoto) {
-    // ===== چک کردن اینکه کاربر در حالت waiting_for_movie_name هست =====
     const pending = await db.collection("pending_movies").findOne({
       userId: fromId,
       status: 'waiting_for_movie_name'
     });
 
     if (pending) {
-      // ===== دریافت اسم فیلم (فارسی مجاز) =====
       const movieName = text.trim();
 
       if (movieName.length < 2) {
@@ -331,7 +336,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== افزودن متن (فقط پیام موفقیت، بدون نمایش متن) =====
+    // ===== افزودن متن =====
     await db.collection("texts").insertOne({
       text: text.trim(),
       createdAt: new Date(),
@@ -349,17 +354,14 @@ module.exports = async (req, res) => {
       ]
     };
 
-    await sendMessage(BOT_TOKEN, chatId, 
-      `✅ متن با موفقیت ذخیره شد!`,
-      keyboard
-    );
+    await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت ذخیره شد!`, keyboard);
 
     res.status(200).json({ ok: true });
     return;
   }
 
   // ============================================================
-  // 🖼️ دریافت پوستر (عکس)
+  // 🖼️ دریافت پوستر
   // ============================================================
   if (hasPhoto) {
     const pending = await db.collection("pending_movies").findOne({
@@ -405,7 +407,7 @@ module.exports = async (req, res) => {
             [{ text: '📺 کیفیت 480', callback_data: 'quality_480' }],
             [{ text: '📺 کیفیت 720', callback_data: 'quality_720' }],
             [{ text: '📺 کیفیت 1080', callback_data: 'quality_1080' }],
-            [{ text: '✅ همه قسمت‌ها رو فرستادم', callback_data: 'all_qualities_sent' }],
+            [{ text: '✅ همه کیفیت‌ها رو فرستادم', callback_data: 'all_qualities_sent' }],
             [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
           ]
         };
@@ -414,8 +416,8 @@ module.exports = async (req, res) => {
           `✅ پوستر با موفقیت ذخیره شد!\n\n` +
           `🎬 فیلم: ${pending.movieName}\n\n` +
           `📤 حالا کیفیت‌های مختلف فیلم رو بفرست.\n` +
-          `از کیفیت ۳۶۰ شروع کن و به ترتیب برو بالا.\n\n` +
-          `هر کیفیت رو که می‌فرستی، روی دکمه مربوطه کلیک کن.`,
+          `⚠️ لازم نیست همه کیفیت‌ها رو بفرستی، هر کدوم رو داری بفرست.\n\n` +
+          `بعد از ارسال کیفیت‌ها، دکمه "همه کیفیت‌ها رو فرستادم" رو بزن.`,
           keyboard
         );
 
@@ -430,7 +432,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 🎬 دریافت فایل (کیفیت‌های فیلم)
+  // 🎬 دریافت فایل (کیفیت)
   // ============================================================
   if (hasFile) {
     const pending = await db.collection("pending_movies").findOne({
@@ -478,35 +480,45 @@ module.exports = async (req, res) => {
         const currentIndex = qualities.indexOf(quality);
         const nextQuality = qualities[currentIndex + 1];
 
+        // دکمه تایید نهایی + کیفیت‌های بعدی
+        const keyboardButtons = [];
+
+        // اضافه کردن دکمه کیفیت بعدی (اگه وجود داره)
+        if (nextQuality) {
+          const nextMap = {
+            '360': 'کیفیت ۳۶۰',
+            '480': 'کیفیت ۴۸۰',
+            '720': 'کیفیت ۷۲۰',
+            '1080': 'کیفیت ۱۰۸۰'
+          };
+          keyboardButtons.push([{ text: `📺 ${nextMap[nextQuality]}`, callback_data: `quality_${nextQuality}` }]);
+        }
+
+        // دکمه تایید نهایی
+        keyboardButtons.push([{ text: '✅ همه کیفیت‌ها رو فرستادم', callback_data: 'all_qualities_sent' }]);
+        keyboardButtons.push([{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]);
+
         const keyboard = {
-          inline_keyboard: [
-            [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
-          ]
+          inline_keyboard: keyboardButtons
         };
 
-        if (nextQuality) {
-          await db.collection("pending_movies").updateOne(
-            { _id: pending._id },
-            { $set: { currentQuality: nextQuality } }
-          );
+        // ساخت لیست کیفیت‌های ارسال شده
+        const sentQualities = pending.qualities || {};
+        const sentList = Object.keys(sentQualities);
+        const qualityNames = {
+          '360': '۳۶۰p',
+          '480': '۴۸۰p',
+          '720': '۷۲۰p',
+          '1080': '۱۰۸۰p'
+        };
+        const sentText = sentList.length > 0 ? `\n📺 ارسال شده: ${sentList.map(q => qualityNames[q] || q).join(', ')}` : '';
 
-          await sendMessage(BOT_TOKEN, chatId, 
-            `✅ ${qualityMap[quality]} با موفقیت ذخیره شد!\n\n` +
-            `📤 حالا ${qualityMap[nextQuality]} رو بفرست.`,
-            keyboard
-          );
-        } else {
-          await db.collection("pending_movies").updateOne(
-            { _id: pending._id },
-            { $set: { currentQuality: null } }
-          );
-
-          await sendMessage(BOT_TOKEN, chatId, 
-            `✅ همه کیفیت‌ها با موفقیت ذخیره شدند!\n\n` +
-            `برای نهایی کردن، دکمه "همه قسمت‌ها رو فرستادم" رو بزن.`,
-            keyboard
-          );
-        }
+        await sendMessage(BOT_TOKEN, chatId, 
+          `✅ ${qualityMap[quality]} با موفقیت ذخیره شد!${sentText}\n\n` +
+          (nextQuality ? `📤 حالا ${qualityMap[nextQuality]} رو بفرست (اختیاری).\n` : '') +
+          `🟢 وقتی همه کیفیت‌ها رو فرستادی، دکمه پایین رو بزن.`,
+          keyboard
+        );
 
       } catch (err) {
         console.error("[bot] ❌ Error saving quality:", err);
