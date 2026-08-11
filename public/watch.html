@@ -122,14 +122,13 @@
 
   .info {
     position: absolute;
-    bottom: 120px;
+    bottom: 160px;
     left: 0;
     right: 0;
     padding: 0 30px;
     z-index: 3;
     text-align: center;
     transition: opacity 0.4s ease;
-    pointer-events: none;
   }
 
   .info .description {
@@ -145,7 +144,48 @@
     overflow: hidden;
   }
 
-  /* ===== دکمه پخش وسط (فقط اول بار) ===== */
+  /* ===== منوی انتخاب کیفیت (دراپ‌داون) ===== */
+  .quality-selector {
+    position: absolute;
+    bottom: 200px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(12px);
+    padding: 8px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .quality-selector label {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .quality-selector select {
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: "Vazirmatn", Tahoma, sans-serif;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    min-width: 80px;
+    text-align: center;
+  }
+  
+  .quality-selector select option {
+    background: #000;
+    color: #fff;
+  }
+
+  /* ===== دکمه پخش وسط ===== */
   .play-btn {
     position: absolute;
     top: 50%;
@@ -228,23 +268,24 @@
   }
 
   /* ==========================================================
-     🎮 نوار کنترل
+     🎮 نوار کنترل (100% عرض افقی)
      ========================================================== */
   .controls {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 30px;
+    left: 20px;
+    right: 20px;
     z-index: 6;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     direction: ltr;
     background: rgba(0,0,0,0.6);
-    backdrop-filter: blur(12px);
-    padding: 6px 12px;
-    border-radius: 10px;
+    backdrop-filter: blur(16px);
+    padding: 8px 14px;
+    border-radius: 14px;
     border: 1px solid rgba(255,255,255,0.06);
-    transition: opacity 0.4s ease;
+    transition: opacity 0.3s ease;
   }
 
   .controls .btn-ctrl {
@@ -258,8 +299,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 30px;
+    min-height: 30px;
     flex-shrink: 0;
   }
 
@@ -272,19 +313,19 @@
   }
 
   .controls .btn-ctrl svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     fill: white;
   }
 
   .controls .btn-play-big {
     background: rgba(255,255,255,0.08);
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     padding: 0;
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 34px;
+    min-height: 34px;
   }
 
   .controls .btn-play-big:hover {
@@ -292,8 +333,8 @@
   }
 
   .controls .btn-play-big svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
   .controls .progress-wrapper {
@@ -314,7 +355,7 @@
 
   .controls .progress-bar {
     flex: 1;
-    height: 3px;
+    height: 4px;
     background: rgba(255,255,255,0.2);
     border-radius: 2px;
     position: relative;
@@ -324,7 +365,7 @@
   }
 
   .controls .progress-bar:hover {
-    height: 4px;
+    height: 5px;
   }
 
   .controls .progress-fill {
@@ -342,8 +383,8 @@
   }
 
   .controls .right-buttons .btn-ctrl svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
   }
 
   /* ==========================================================
@@ -353,25 +394,28 @@
     .info .description { font-size: 14px; }
     .play-btn { width: 60px; height: 60px; }
     .play-btn svg { width: 28px; height: 28px; }
-    .info { bottom: 100px; padding: 0 16px; }
+    .info { bottom: 140px; padding: 0 16px; }
+    .quality-selector { bottom: 180px; padding: 6px 12px; gap: 8px; }
+    .quality-selector select { padding: 4px 8px; font-size: 13px; min-width: 60px; }
     .topbar { padding: 12px 14px; }
     .topbar .btn-back { font-size: 12px; padding: 6px 10px; }
     .topbar .film-title { font-size: 13px; max-width: 50%; }
 
     .controls {
       bottom: 60px;
-      padding: 5px 10px;
-      gap: 4px;
-      border-radius: 10px;
+      left: 12px;
+      right: 12px;
+      padding: 6px 10px;
+      gap: 6px;
+      border-radius: 12px;
     }
-
     .controls .btn-ctrl { min-width: 24px; min-height: 24px; padding: 3px 4px; }
     .controls .btn-ctrl svg { width: 14px; height: 14px; }
     .controls .btn-play-big { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
     .controls .btn-play-big svg { width: 16px; height: 16px; }
     .controls .time { font-size: 10px; min-width: 30px; }
     .controls .right-buttons .btn-ctrl svg { width: 12px; height: 12px; }
-    .controls .progress-bar { height: 2px; }
+    .controls .progress-bar { height: 3px; }
   }
 
   /* ==========================================================
@@ -379,9 +423,9 @@
      ========================================================== */
   @media (min-width: 601px) {
     .controls {
-      bottom: 10px;
-      padding: 5px 12px;
-      gap: 6px;
+      bottom: 20px;
+      padding: 6px 14px;
+      gap: 8px;
     }
   }
 
@@ -390,12 +434,12 @@
      ========================================================== */
   @media (min-width: 1200px) {
     .controls {
-      padding: 6px 16px;
-      gap: 8px;
+      padding: 8px 20px;
+      gap: 10px;
     }
-    .controls .btn-ctrl svg { width: 18px; height: 18px; }
-    .controls .btn-play-big { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
-    .controls .btn-play-big svg { width: 20px; height: 20px; }
+    .controls .btn-ctrl svg { width: 20px; height: 20px; }
+    .controls .btn-play-big { width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
+    .controls .btn-play-big svg { width: 22px; height: 22px; }
   }
 
   /* ==========================================================
@@ -431,9 +475,17 @@
     <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
   </button>
 
-  <!-- ===== توضیحات ===== -->
+  <!-- ===== اطلاعات فیلم ===== -->
   <div class="info" id="info">
     <div class="description" id="description">در حال دریافت اطلاعات فیلم...</div>
+  </div>
+
+  <!-- ===== منوی انتخاب کیفیت (دراپ‌داون) ===== -->
+  <div class="quality-selector" id="qualitySelector">
+    <label for="qualitySelect">کیفیت:</label>
+    <select id="qualitySelect">
+      <option value="">در حال بارگذاری...</option>
+    </select>
   </div>
 
   <!-- ===== ویدیو ===== -->
@@ -445,7 +497,9 @@
     <div>در حال بارگذاری فیلم...</div>
   </div>
 
-  <!-- ===== نوار کنترل ===== -->
+  <!-- ==========================================================
+     🎮 نوار کنترل (100% عرض افقی)
+     ========================================================== -->
   <div class="controls" id="controls">
     <!-- ۱۰ ثانیه عقب -->
     <button class="btn-ctrl" id="btnSkipBack" title="۱۰ ثانیه عقب">
@@ -468,7 +522,7 @@
       </svg>
     </button>
 
-    <!-- نوار پیشرفت + زمان -->
+    <!-- ===== نوار پیشرفت + زمان ===== -->
     <div class="progress-wrapper">
       <span class="time" id="timeCurrent">00:00</span>
       <div class="progress-bar" id="progressBar">
@@ -477,14 +531,16 @@
       <span class="time" id="timeDuration">00:00</span>
     </div>
 
-    <!-- دکمه‌های سمت راست -->
+    <!-- ===== دکمه‌های سمت راست ===== -->
     <div class="right-buttons">
+      <!-- صدا -->
       <button class="btn-ctrl" id="btnMute" title="قطع/وصل صدا">
         <svg viewBox="0 0 24 24" id="muteIcon">
           <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
         </svg>
       </button>
 
+      <!-- تمام صفحه -->
       <button class="btn-ctrl" id="btnFullscreen" title="تمام صفحه">
         <svg viewBox="0 0 24 24" id="fullscreenIcon">
           <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
@@ -569,9 +625,9 @@ if (!token) {
 
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
-const quality = params.get('quality') || 'auto';
+const qualityParam = params.get('quality');
 
-console.log('🎬 فیلم:', id, '| کیفیت:', quality);
+console.log('🎬 فیلم:', id, '| کیفیت:', qualityParam);
 
 const posterImage = document.getElementById('posterImage');
 const filmTitle = document.getElementById('filmTitle');
@@ -592,6 +648,7 @@ const btnMute = document.getElementById('btnMute');
 const muteIcon = document.getElementById('muteIcon');
 const btnFullscreen = document.getElementById('btnFullscreen');
 const fullscreenIcon = document.getElementById('fullscreenIcon');
+const qualitySelect = document.getElementById('qualitySelect');
 
 if (!id) {
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#aaa;">لینک ناقص است</div>';
@@ -616,6 +673,30 @@ async function loadMovieInfo() {
       const data = await response.json();
       filmTitle.textContent = data.name.replace(/-/g, ' ');
       descriptionEl.textContent = data.description || 'بدون توضیحات';
+      
+      // --- بخش پر کردن دراپ‌داون کیفیت ---
+      if (data.qualities && Object.keys(data.qualities).length > 0) {
+        const qualityKeys = Object.keys(data.qualities).sort((a, b) => parseInt(b) - parseInt(a));
+        
+        qualitySelect.innerHTML = '';
+        qualityKeys.forEach(q => {
+          const option = document.createElement('option');
+          option.value = q;
+          option.textContent = q + 'p';
+          qualitySelect.appendChild(option);
+        });
+
+        // اگر در URL کیفیت وجود داشت، آن را انتخاب کن
+        if (qualityParam && qualityKeys.includes(qualityParam)) {
+          qualitySelect.value = qualityParam;
+        }
+        
+        // نمایش کیفیت‌ها در توضیحات
+        descriptionEl.textContent += `\n📺 کیفیت‌ها: ${qualityKeys.map(q => q + 'p').join(', ')}`;
+      } else {
+        qualitySelect.innerHTML = '<option value="">کیفیتی موجود نیست</option>';
+      }
+
     } else {
       filmTitle.textContent = decodeURIComponent(id).replace(/-/g, ' ');
       descriptionEl.textContent = 'توضیحاتی برای این فیلم موجود نیست';
@@ -654,31 +735,52 @@ async function loadPoster() {
 loadPoster();
 
 // ============================================================
-// 🎬 پخش خودکار فیلم
+// 🎬 شروع پخش خودکار (با کیفیت انتخاب شده)
 // ============================================================
 
-function startPlayback() {
+function startPlayback(selectedQuality) {
+  // مخفی کردن پوستر، دکمه پخش، اطلاعات و انتخاب کیفیت
+  document.querySelector('.poster-container').style.display = 'none';
+  document.querySelector('.overlay').style.display = 'none';
+  document.querySelector('.info').style.display = 'none';
+  document.querySelector('.quality-selector').style.display = 'none';
   playBtn.classList.add('hidden');
   
+  video.classList.add('playing');
+  
   let streamUrl = `/api/stream/${encodeURIComponent(id)}`;
-  if (quality !== 'auto' && quality) {
-    streamUrl += `?quality=${quality}`;
+  if (selectedQuality && selectedQuality !== '') {
+    streamUrl += `?quality=${selectedQuality}`;
   }
   
   console.log('🎬 لینک استریم:', streamUrl);
   
   video.src = streamUrl;
   video.load();
-  video.play();
+  video.play().catch(err => {
+    console.error('❌ خطا در شروع خودکار پخش:', err);
+    loading.classList.remove('show');
+  });
   
   loading.classList.add('show');
 }
 
-playBtn.addEventListener('click', startPlayback);
+// ===== دکمه پخش وسط =====
+playBtn.addEventListener('click', () => {
+  const selectedQuality = qualitySelect.value;
+  if (!selectedQuality || selectedQuality === 'کیفیتی موجود نیست') {
+    alert('لطفاً یک کیفیت معتبر انتخاب کنید.');
+    return;
+  }
+  startPlayback(selectedQuality);
+});
 
-setTimeout(() => {
-  startPlayback();
-}, 500);
+// ===== اگر کیفیت در URL مشخص شده بود، مستقیم پخش کن =====
+if (qualityParam) {
+  setTimeout(() => {
+    startPlayback(qualityParam);
+  }, 600);
+}
 
 // ============================================================
 // 🎮 کنترل‌های ویدیو
