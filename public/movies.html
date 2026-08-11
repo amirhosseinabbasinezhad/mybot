@@ -270,19 +270,17 @@
     background: var(--card-hover);
     border-color: var(--gold-dim);
   }
-
-  .poster-thumb {
-    width: 40px;
-    height: 40px;
-    border-radius: 9px;
-    flex-shrink: 0;
-    background: linear-gradient(155deg, var(--velvet), #3c1119);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-  }
-
+.poster-thumb {
+  width: 50px;
+  height: 70px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: linear-gradient(155deg, var(--velvet), #3c1119);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
   .title { font-size: 16px; font-weight: 600; flex: 1; min-width: 0; }
   .title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -448,22 +446,31 @@ function render(movies) {
   count.textContent = allMovies.length ? allMovies.length + ' فیلم' : '';
 
   if (!allMovies.length) {
-    list.innerHTML = '<li class="empty">هنوز فیلمی اضافه نشده.</li>';
+    list.innerHTML = '<li class="empty">🎬 هنوز فیلمی اضافه نشده.</li>';
     return;
   }
 
   if (!movies.length) {
-    list.innerHTML = '<li class="no-match">چیزی با این اسم پیدا نشد.</li>';
+    list.innerHTML = '<li class="no-match">🔍 چیزی با این اسم پیدا نشد.</li>';
     return;
   }
 
   list.innerHTML = movies
     .map((m) => {
       const displayName = m.name.replace(/-/g, ' ');
+      
       return `
         <li>
           <a href="/watch.html?id=${encodeURIComponent(m.name)}">
-            <div class="poster-thumb">🎬</div>
+            <div class="poster-thumb">
+              <img 
+                src="/api/poster/${encodeURIComponent(m.name)}" 
+                alt="${escapeHtml(displayName)}"
+                loading="lazy"
+                onerror="this.style.display='none';this.parentElement.innerHTML='<span style=\\'font-size:24px;\\'>🎬</span>'"
+                style="width:100%;height:100%;object-fit:cover;border-radius:8px;"
+              />
+            </div>
             <div class="title"><span>${escapeHtml(displayName)}</span></div>
             <svg class="go" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
           </a>
