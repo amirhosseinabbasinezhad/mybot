@@ -96,19 +96,20 @@
     z-index: 1;
   }
 
- .poster-container img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: blur(8px) brightness(0.4);
-  transform: scale(1);  /* ← تغییر به 1 */
-  transition: filter 0.8s ease, transform 0.8s ease;
-}
+  .poster-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: blur(8px) brightness(0.4);
+    transform: scale(1);
+    transition: filter 0.8s ease, transform 0.8s ease;
+  }
 
- .poster-container img.loaded {
-  filter: blur(0px) brightness(0.5);
-  transform: scale(1);  /* ← این رو هم به 1 ببر */
-}
+  .poster-container img.loaded {
+    filter: blur(0px) brightness(0.5);
+    transform: scale(1);
+  }
+
   .overlay {
     position: absolute;
     top: 0;
@@ -142,13 +143,16 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-.quality-selector {
+
+  /* ===== منوی انتخاب کیفیت (دراپ‌داون استاندارد برای TV) ===== */
+  .quality-selector {
     position: absolute;
     bottom: 155px;
     left: 50%;
     transform: translateX(-50%);
     z-index: 3;
     display: flex;
+    align-items: center;
     gap: 12px;
     background: rgba(0,0,0,0.6);
     backdrop-filter: blur(12px);
@@ -157,32 +161,30 @@
     border: 1px solid rgba(255,255,255,0.06);
   }
 
-  .quality-selector .btn-quality {
-    background: none;
-    border: none;
-    color: rgba(255,255,255,0.5);
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: "Vazirmatn", Tahoma, sans-serif;
-    cursor: pointer;
-    transition: all 0.3s ease;
+  .quality-selector label {
+    font-size: 14px;
+    color: rgba(255,255,255,0.7);
   }
 
-  .quality-selector .btn-quality:hover {
-    color: #fff;
+  .quality-selector select {
     background: rgba(255,255,255,0.05);
-  }
-
-  .quality-selector .btn-quality.active {
     color: #fff;
-    background: rgba(224,169,74,0.2);
-    border: 1px solid rgba(224,169,74,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-family: "Vazirmatn", Tahoma, sans-serif;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+    min-width: 80px;
+    text-align: center;
+  }
+  
+  .quality-selector select option {
+    background: #000;
+    color: #fff;
   }
 
-  .quality-selector .btn-quality.hidden {
-    display: none;
-  }
   /* ===== دکمه پخش وسط ===== */
   .play-btn {
     position: absolute;
@@ -389,38 +391,27 @@
   }
 
   /* ==========================================================
-     📱 موبایل: کنترل‌ها ۳۰ پیکسل بالاتر + همیشه نمایش
+     📱 موبایل + تلویزیون (بهینه‌سازی برای دکمه‌های جهت‌دار)
      ========================================================== */
   @media (max-width: 600px) {
     .info .description { font-size: 14px; }
     .play-btn { width: 60px; height: 60px; }
     .play-btn svg { width: 28px; height: 28px; }
     .info { bottom: 100px; padding: 0 16px; }
+    .quality-selector { bottom: 135px; padding: 6px 12px; gap: 8px; flex-direction: row; }
+    .quality-selector select { padding: 4px 8px; font-size: 13px; min-width: 60px; }
     .topbar { padding: 12px 14px; }
     .topbar .btn-back { font-size: 12px; padding: 6px 10px; }
     .topbar .film-title { font-size: 13px; max-width: 50%; }
 
-    /* ===== کنترل‌ها ۳۰ پیکسل بالاتر ===== */
     .controls {
-      bottom: 20px;  /* ← ۳۰ پیکسل بالاتر از قبل (قبلاً 30 بود) */
+      bottom: 20px;
       left: 12px;
       right: 12px;
       padding: 8px 12px;
       gap: 8px;
       border-radius: 12px;
-      opacity: 1 !important;
-      transform: none !important;
-      pointer-events: auto !important;
     }
-    :-webkit-full-screen .controls {
-         bottom: 30px !important;
-        }
-      :-moz-full-screen .controls {
-        bottom: 30px !important;
-        }
-      :fullscreen .controls {
-        bottom: 30px !important;
-        }
     .controls .btn-ctrl svg { width: 16px; height: 16px; }
     .controls .btn-play-big { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
     .controls .btn-play-big svg { width: 18px; height: 18px; }
@@ -431,22 +422,17 @@
   }
 
   /* ==========================================================
-     📱 گوشی‌های خیلی کوچک (عریض کمتر از ۴۰۰px)
+     📺 تنظیمات ویژه برای تلویزیون (صفحات بزرگ و فول‌اسکرین)
      ========================================================== */
-  @media (max-width: 400px) {
-    .controls {
-      bottom: 50px;
-      padding: 6px 10px;
-      gap: 6px;
-      border-radius: 10px;
+  @media (min-width: 1024px) and (orientation: landscape) {
+    .quality-selector select {
+      padding: 10px 20px;
+      font-size: 18px;
+      min-width: 120px;
     }
-    .controls .btn-ctrl { min-width: 26px; min-height: 26px; padding: 2px 4px; }
-    .controls .btn-ctrl svg { width: 14px; height: 14px; }
-    .controls .btn-play-big { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
-    .controls .btn-play-big svg { width: 16px; height: 16px; }
-    .controls .time { font-size: 9px; min-width: 26px; }
-    .controls .right-buttons .btn-ctrl svg { width: 14px; height: 14px; }
-    .controls .progress-bar { height: 2px; }
+    .quality-selector label {
+      font-size: 18px;
+    }
   }
 </style>
 </head>
@@ -481,17 +467,12 @@
     <div class="description" id="description">در حال بارگذاری...</div>
   </div>
 
-  <!-- ===== منوی انتخاب کیفیت ===== -->
+  <!-- ===== منوی انتخاب کیفیت (دراپ‌داون استاندارد برای تلویزیون) ===== -->
   <div class="quality-selector" id="qualitySelector">
-    <button class="btn-quality hidden" data-quality="480p">480p</button>
-    <button class="btn-quality hidden" data-quality="720p">720p</button>
-    <button class="btn-quality hidden" data-quality="1080p">1080p</button>
-  </div>
-
-  <!-- ===== ویدیو ===== -->
-  <!-- ===== توضیحات ===== -->
-  <div class="info" id="info">
-    <div class="description" id="description">در حال دریافت اطلاعات فیلم...</div>
+    <label for="qualitySelect">کیفیت:</label>
+    <select id="qualitySelect">
+      <option value="">در حال بارگذاری...</option>
+    </select>
   </div>
 
   <!-- ===== ویدیو ===== -->
@@ -651,6 +632,7 @@ const btnMute = document.getElementById('btnMute');
 const muteIcon = document.getElementById('muteIcon');
 const btnFullscreen = document.getElementById('btnFullscreen');
 const fullscreenIcon = document.getElementById('fullscreenIcon');
+const qualitySelect = document.getElementById('qualitySelect');
 
 if (!id) {
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#aaa;">لینک ناقص است</div>';
@@ -675,6 +657,29 @@ async function loadMovieInfo() {
       const data = await response.json();
       filmTitle.textContent = data.name.replace(/-/g, ' ');
       descriptionEl.textContent = data.description || 'بدون توضیحات';
+      
+      // --- بخش جدید: پر کردن دراپ‌داون کیفیت ---
+      if (data.qualities && data.qualities.length > 0) {
+        // مرتب‌سازی کیفیت‌ها از زیاد به کم
+        const sortedQualities = data.qualities.sort((a, b) => parseInt(b) - parseInt(a));
+        
+        qualitySelect.innerHTML = '';
+        sortedQualities.forEach(q => {
+          const option = document.createElement('option');
+          option.value = q;
+          option.textContent = q;
+          qualitySelect.appendChild(option);
+        });
+
+        // انتخاب بهترین کیفیت به صورت پیش‌فرض
+        if (data.bestQuality && sortedQualities.includes(data.bestQuality)) {
+          qualitySelect.value = data.bestQuality;
+        }
+      } else {
+        qualitySelect.innerHTML = '<option value="">کیفیتی موجود نیست</option>';
+      }
+      // --- پایان بخش جدید ---
+
     } else {
       filmTitle.textContent = decodeURIComponent(id).replace(/-/g, ' ');
       descriptionEl.textContent = 'توضیحاتی برای این فیلم موجود نیست';
@@ -713,16 +718,33 @@ async function loadPoster() {
 loadPoster();
 
 // ============================================================
-// 🎬 پخش فیلم
+// 🎬 پخش فیلم (با در نظر گرفتن کیفیت انتخاب شده)
 // ============================================================
 playBtn.addEventListener('click', () => {
+  const selectedQuality = qualitySelect.value;
+
+  // اگر کیفیتی انتخاب نشده و لیست خالی است، از کیفیت پیش‌فرض استفاده کن
+  if (!selectedQuality || selectedQuality === 'کیفیتی موجود نیست') {
+    // به جای متوقف کردن، با کیفیت پیش‌فرض (مثلاً 720p) ادامه میدهیم
+    console.warn('⚠️ کیفیتی انتخاب نشده، استفاده از پیش‌فرض سرور');
+  }
+
   document.querySelector('.poster-container').style.display = 'none';
   document.querySelector('.overlay').style.display = 'none';
   document.querySelector('.info').style.display = 'none';
+  document.querySelector('.quality-selector').style.display = 'none'; // مخفی کردن دراپ‌داون
   playBtn.style.display = 'none';
   
   video.classList.add('playing');
-  video.src = `/api/stream/${encodeURIComponent(id)}`;
+  
+  // --- تغییر: اضافه کردن پارامتر quality به آدرس استریم ---
+  let streamUrl = `/api/stream/${encodeURIComponent(id)}`;
+  if (selectedQuality && selectedQuality !== 'کیفیتی موجود نیست') {
+    streamUrl += `?quality=${encodeURIComponent(selectedQuality)}`;
+  }
+  video.src = streamUrl;
+  // --- پایان تغییر ---
+  
   video.load();
   video.play();
   
