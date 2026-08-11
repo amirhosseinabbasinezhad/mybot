@@ -39,6 +39,7 @@
     justify-content: space-between;
     gap: 12px;
     pointer-events: none;
+    transition: opacity 0.4s ease;
   }
 
   .topbar * {
@@ -121,20 +122,13 @@
 
   .info {
     position: absolute;
-    bottom: 210px;
+    bottom: 120px;
     left: 0;
     right: 0;
     padding: 0 30px;
     z-index: 3;
     text-align: center;
-  }
-
-  .info .title {
-    font-size: 32px;
-    font-weight: 800;
-    margin-bottom: 12px;
-    text-shadow: 0 4px 20px rgba(0,0,0,0.8);
-    text-align: center;
+    transition: opacity 0.4s ease;
   }
 
   .info .description {
@@ -149,9 +143,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
-  /* ===== منوی انتخاب کیفیت ===== */
-  .quality-selector {
+.quality-selector {
     position: absolute;
     bottom: 155px;
     left: 50%;
@@ -192,7 +184,6 @@
   .quality-selector .btn-quality.hidden {
     display: none;
   }
-
   /* ===== دکمه پخش وسط ===== */
   .play-btn {
     position: absolute;
@@ -276,37 +267,91 @@
   }
 
   /* ==========================================================
-     🎮 نوار کنترل پایین (کامل)
+     🎮 نوار کنترل (همیشه پایین)
      ========================================================== */
   .controls {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    padding: 16px 20px 24px;
-    background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 50%, transparent 100%);
+    bottom: 30px;
+    left: 20px;
+    right: 20px;
     z-index: 6;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-
-  .controls.visible {
-    opacity: 1;
-  }
-
-  .controls .progress-container {
     display: flex;
     align-items: center;
     gap: 12px;
     direction: ltr;
-    margin-bottom: 12px;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(16px);
+    padding: 10px 16px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.06);
+    transition: opacity 0.3s ease;
+  }
+
+  /* ===== دکمه‌های کنترل ===== */
+  .controls .btn-ctrl {
+    background: none;
+    border: none;
+    color: #fff;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    min-height: 32px;
+    flex-shrink: 0;
+  }
+
+  .controls .btn-ctrl:hover {
+    background: rgba(255,255,255,0.08);
+  }
+
+  .controls .btn-ctrl:active {
+    transform: scale(0.92);
+  }
+
+  .controls .btn-ctrl svg {
+    width: 20px;
+    height: 20px;
+    fill: white;
+  }
+
+  .controls .btn-play-big {
+    background: rgba(255,255,255,0.08);
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    min-width: 38px;
+    min-height: 38px;
+  }
+
+  .controls .btn-play-big:hover {
+    background: rgba(255,255,255,0.15);
+  }
+
+  .controls .btn-play-big svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* ===== نوار پیشرفت ===== */
+  .controls .progress-wrapper {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
   }
 
   .controls .time {
-    font-size: 12px;
+    font-size: 11px;
     color: #aaa;
-    min-width: 45px;
+    min-width: 38px;
     font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
   }
 
   .controls .progress-bar {
@@ -316,6 +361,7 @@
     border-radius: 2px;
     position: relative;
     cursor: pointer;
+    min-width: 40px;
     transition: height 0.2s;
   }
 
@@ -330,107 +376,78 @@
     width: 0%;
   }
 
-  .controls .buttons-row {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    direction: ltr;
-  }
-
-  .controls .btn-ctrl {
-    background: none;
-    border: none;
-    color: #fff;
-    cursor: pointer;
-    padding: 6px 10px;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 40px;
-    min-height: 40px;
-  }
-
-  .controls .btn-ctrl:hover {
-    background: rgba(255,255,255,0.08);
-  }
-
-  .controls .btn-ctrl:active {
-    transform: scale(0.92);
-  }
-
-  .controls .btn-ctrl svg {
-    width: 24px;
-    height: 24px;
-    fill: white;
-  }
-
-  .controls .btn-play-big {
-    background: rgba(255,255,255,0.08);
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    padding: 0;
-  }
-
-  .controls .btn-play-big:hover {
-    background: rgba(255,255,255,0.15);
-  }
-
-  .controls .btn-play-big svg {
-    width: 28px;
-    height: 28px;
-  }
-
+  /* ===== دکمه‌های سمت راست ===== */
   .controls .right-buttons {
     display: flex;
     align-items: center;
     gap: 4px;
-    margin-left: auto;
+    flex-shrink: 0;
   }
 
   .controls .right-buttons .btn-ctrl svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
+  /* ==========================================================
+     📱 موبایل: کنترل‌ها ۳۰ پیکسل بالاتر + همیشه نمایش
+     ========================================================== */
   @media (max-width: 600px) {
-    .info .title { font-size: 24px; }
     .info .description { font-size: 14px; }
     .play-btn { width: 60px; height: 60px; }
     .play-btn svg { width: 28px; height: 28px; }
-    .info { bottom: 190px; padding: 0 16px; }
-    .quality-selector { bottom: 135px; padding: 6px 12px; gap: 6px; }
-    .quality-selector .btn-quality { font-size: 11px; padding: 6px 10px; }
+    .info { bottom: 100px; padding: 0 16px; }
+    .topbar { padding: 12px 14px; }
+    .topbar .btn-back { font-size: 12px; padding: 6px 10px; }
+    .topbar .film-title { font-size: 13px; max-width: 50%; }
+
+    /* ===== کنترل‌ها ۳۰ پیکسل بالاتر ===== */
     .controls {
-      padding: 12px 14px 18px;
+      bottom: 20px;  /* ← ۳۰ پیکسل بالاتر از قبل (قبلاً 30 بود) */
+      left: 12px;
+      right: 12px;
+      padding: 8px 12px;
+      gap: 8px;
+      border-radius: 12px;
+      opacity: 1 !important;
+      transform: none !important;
+      pointer-events: auto !important;
     }
-    .controls .btn-ctrl svg {
-      width: 20px;
-      height: 20px;
-    }
-    .controls .btn-play-big {
-      width: 40px;
-      height: 40px;
-    }
-    .controls .btn-play-big svg {
-      width: 22px;
-      height: 22px;
-    }
-    .controls .right-buttons .btn-ctrl svg {
-      width: 18px;
-      height: 18px;
-    }
-    .topbar .film-title {
-      font-size: 13px;
-      max-width: 50%;
-    }
-    .topbar .btn-back {
-      font-size: 12px;
+    :-webkit-full-screen .controls {
+         bottom: 30px !important;
+        }
+      :-moz-full-screen .controls {
+        bottom: 30px !important;
+        }
+      :fullscreen .controls {
+        bottom: 30px !important;
+        }
+    .controls .btn-ctrl svg { width: 16px; height: 16px; }
+    .controls .btn-play-big { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
+    .controls .btn-play-big svg { width: 18px; height: 18px; }
+    .controls .time { font-size: 10px; min-width: 30px; }
+    .controls .right-buttons .btn-ctrl svg { width: 16px; height: 16px; }
+    .controls .progress-bar { height: 3px; }
+    .controls .progress-bar:hover { height: 4px; }
+  }
+
+  /* ==========================================================
+     📱 گوشی‌های خیلی کوچک (عریض کمتر از ۴۰۰px)
+     ========================================================== */
+  @media (max-width: 400px) {
+    .controls {
+      bottom: 50px;
       padding: 6px 10px;
+      gap: 6px;
+      border-radius: 10px;
     }
+    .controls .btn-ctrl { min-width: 26px; min-height: 26px; padding: 2px 4px; }
+    .controls .btn-ctrl svg { width: 14px; height: 14px; }
+    .controls .btn-play-big { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
+    .controls .btn-play-big svg { width: 16px; height: 16px; }
+    .controls .time { font-size: 9px; min-width: 26px; }
+    .controls .right-buttons .btn-ctrl svg { width: 14px; height: 14px; }
+    .controls .progress-bar { height: 2px; }
   }
 </style>
 </head>
@@ -473,6 +490,12 @@
   </div>
 
   <!-- ===== ویدیو ===== -->
+  <!-- ===== توضیحات ===== -->
+  <div class="info" id="info">
+    <div class="description" id="description">در حال دریافت اطلاعات فیلم...</div>
+  </div>
+
+  <!-- ===== ویدیو ===== -->
   <video id="player" playsinline crossorigin="anonymous"></video>
 
   <!-- ===== بارگذاری ===== -->
@@ -482,10 +505,32 @@
   </div>
 
   <!-- ==========================================================
-       🎮 نوار کنترل پایین (کامل)
+       🎮 نوار کنترل
        ========================================================== -->
   <div class="controls" id="controls">
-    <div class="progress-container">
+    <!-- ۱۰ ثانیه عقب -->
+    <button class="btn-ctrl" id="btnSkipBack" title="۱۰ ثانیه عقب">
+      <svg viewBox="0 0 24 24">
+        <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
+      </svg>
+    </button>
+
+    <!-- پخش/توقف -->
+    <button class="btn-ctrl btn-play-big" id="btnPlayPause" title="پخش/توقف">
+      <svg viewBox="0 0 24 24" id="playPauseIcon">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+    </button>
+
+    <!-- ۱۰ ثانیه جلو -->
+    <button class="btn-ctrl" id="btnSkipForward" title="۱۰ ثانیه جلو">
+      <svg viewBox="0 0 24 24">
+        <path d="M13 18V6l8.5 6-8.5 6zm-.5-6l-8.5-6v12l8.5-6z"/>
+      </svg>
+    </button>
+
+    <!-- ===== نوار پیشرفت + زمان ===== -->
+    <div class="progress-wrapper">
       <span class="time" id="timeCurrent">00:00</span>
       <div class="progress-bar" id="progressBar">
         <div class="progress-fill" id="progressFill"></div>
@@ -493,44 +538,21 @@
       <span class="time" id="timeDuration">00:00</span>
     </div>
 
-    <div class="buttons-row">
-      <!-- ۱۰ ثانیه عقب -->
-      <button class="btn-ctrl" id="btnSkipBack" title="۱۰ ثانیه عقب">
-        <svg viewBox="0 0 24 24">
-          <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
+    <!-- ===== دکمه‌های سمت راست ===== -->
+    <div class="right-buttons">
+      <!-- صدا -->
+      <button class="btn-ctrl" id="btnMute" title="قطع/وصل صدا">
+        <svg viewBox="0 0 24 24" id="muteIcon">
+          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
         </svg>
       </button>
 
-      <!-- پخش/توقف -->
-      <button class="btn-ctrl btn-play-big" id="btnPlayPause" title="پخش/توقف">
-        <svg viewBox="0 0 24 24" id="playPauseIcon">
-          <path d="M8 5v14l11-7z"/>
+      <!-- تمام صفحه -->
+      <button class="btn-ctrl" id="btnFullscreen" title="تمام صفحه">
+        <svg viewBox="0 0 24 24" id="fullscreenIcon">
+          <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
         </svg>
       </button>
-
-      <!-- ۱۰ ثانیه جلو -->
-      <button class="btn-ctrl" id="btnSkipForward" title="۱۰ ثانیه جلو">
-        <svg viewBox="0 0 24 24">
-          <path d="M13 18V6l8.5 6-8.5 6zm-.5-6l-8.5-6v12l8.5-6z"/>
-        </svg>
-      </button>
-
-      <!-- دکمه‌های سمت راست -->
-      <div class="right-buttons">
-        <!-- صدا -->
-        <button class="btn-ctrl" id="btnMute" title="قطع/وصل صدا">
-          <svg viewBox="0 0 24 24" id="muteIcon">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-          </svg>
-        </button>
-
-        <!-- تمام صفحه -->
-        <button class="btn-ctrl" id="btnFullscreen" title="تمام صفحه">
-          <svg viewBox="0 0 24 24" id="fullscreenIcon">
-            <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-          </svg>
-        </button>
-      </div>
     </div>
   </div>
 
@@ -596,6 +618,15 @@ async function fetchWithAuth(url, options = {}) {
 }
 
 // ============================================================
+// 🔐 بررسی احراز هویت
+// ============================================================
+
+const token = localStorage.getItem('accessToken');
+if (!token) {
+  window.location.href = '/login.html';
+}
+
+// ============================================================
 // 📥 دریافت اطلاعات فیلم
 // ============================================================
 
@@ -604,7 +635,6 @@ const id = params.get('id');
 
 const posterImage = document.getElementById('posterImage');
 const filmTitle = document.getElementById('filmTitle');
-const titleEl = document.getElementById('title');
 const descriptionEl = document.getElementById('description');
 const playBtn = document.getElementById('playBtn');
 const video = document.getElementById('player');
@@ -622,19 +652,13 @@ const btnMute = document.getElementById('btnMute');
 const muteIcon = document.getElementById('muteIcon');
 const btnFullscreen = document.getElementById('btnFullscreen');
 const fullscreenIcon = document.getElementById('fullscreenIcon');
-const qualitySelector = document.getElementById('qualitySelector');
-const qualityBtns = document.querySelectorAll('.btn-quality');
-
-let selectedQuality = '720p';
-let movieQualities = {};
-let isMuted = false;
 
 if (!id) {
   document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#aaa;">لینک ناقص است</div>';
 }
 
 // ============================================================
-// 📥 دریافت اطلاعات فیلم (با کیفیت‌ها)
+// 📥 دریافت اطلاعات فیلم
 // ============================================================
 async function loadMovieInfo() {
   try {
@@ -650,89 +674,20 @@ async function loadMovieInfo() {
     
     if (response.ok) {
       const data = await response.json();
-      const displayName = data.name.replace(/-/g, ' ');
-      filmTitle.textContent = displayName;
-      titleEl.textContent = displayName;
+      filmTitle.textContent = data.name.replace(/-/g, ' ');
       descriptionEl.textContent = data.description || 'بدون توضیحات';
-      
-      // ذخیره کیفیت‌ها
-      if (data.qualities && Object.keys(data.qualities).length > 0) {
-        movieQualities = data.qualities;
-        updateQualityButtons();
-      } else {
-        qualitySelector.style.display = 'none';
-      }
     } else {
-      const displayName = decodeURIComponent(id).replace(/-/g, ' ');
-      filmTitle.textContent = displayName;
-      titleEl.textContent = displayName;
+      filmTitle.textContent = decodeURIComponent(id).replace(/-/g, ' ');
       descriptionEl.textContent = 'توضیحاتی برای این فیلم موجود نیست';
-      qualitySelector.style.display = 'none';
     }
   } catch (err) {
-    console.error('Error loading movie info:', err);
-    const displayName = decodeURIComponent(id).replace(/-/g, ' ');
-    filmTitle.textContent = displayName;
-    titleEl.textContent = displayName;
+    console.error('❌ خطا:', err);
+    filmTitle.textContent = decodeURIComponent(id).replace(/-/g, ' ');
     descriptionEl.textContent = 'خطا در بارگذاری توضیحات';
-    qualitySelector.style.display = 'none';
   }
 }
 
 loadMovieInfo();
-
-// ============================================================
-// 🎯 به‌روزرسانی دکمه‌های کیفیت
-// ============================================================
-function updateQualityButtons() {
-  const availableQualities = Object.keys(movieQualities);
-  let hasVisible = false;
-  
-  qualityBtns.forEach(btn => {
-    const quality = btn.dataset.quality;
-    if (availableQualities.includes(quality)) {
-      btn.classList.remove('hidden');
-      btn.classList.remove('active');
-      if (quality === '720p' && availableQualities.includes('720p')) {
-        btn.classList.add('active');
-        selectedQuality = '720p';
-      } else if (!hasVisible) {
-        btn.classList.add('active');
-        selectedQuality = quality;
-      }
-      hasVisible = true;
-    } else {
-      btn.classList.add('hidden');
-    }
-  });
-  
-  if (!hasVisible) {
-    qualitySelector.style.display = 'none';
-  } else {
-    qualitySelector.style.display = 'flex';
-  }
-}
-
-// ============================================================
-// 🎬 انتخاب کیفیت
-// ============================================================
-qualityBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    qualityBtns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedQuality = btn.dataset.quality;
-    
-    if (video.classList.contains('playing')) {
-      const qualityData = movieQualities[selectedQuality];
-      if (qualityData) {
-        video.src = `/api/stream/${encodeURIComponent(id)}?quality=${selectedQuality}`;
-        video.load();
-        video.play();
-        loading.classList.add('show');
-      }
-    }
-  });
-});
 
 // ============================================================
 // 📥 بارگذاری پوستر
@@ -744,15 +699,13 @@ async function loadPoster() {
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       posterImage.src = url;
-      posterImage.onload = () => {
-        posterImage.classList.add('loaded');
-      };
+      posterImage.onload = () => posterImage.classList.add('loaded');
     } else {
       posterImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"%3E%3Crect fill="%23191a20" width="400" height="600"/%3E%3Ctext x="200" y="300" font-family="sans-serif" font-size="40" fill="%238d8b86" text-anchor="middle" dominant-baseline="central"%3E🎬%3C/text%3E%3C/svg%3E';
       posterImage.classList.add('loaded');
     }
   } catch (err) {
-    console.error('Error loading poster:', err);
+    console.error('❌ خطا در دریافت پوستر:', err);
     posterImage.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600"%3E%3Crect fill="%23191a20" width="400" height="600"/%3E%3Ctext x="200" y="300" font-family="sans-serif" font-size="40" fill="%238d8b86" text-anchor="middle" dominant-baseline="central"%3E🎬%3C/text%3E%3C/svg%3E';
     posterImage.classList.add('loaded');
   }
@@ -767,19 +720,13 @@ playBtn.addEventListener('click', () => {
   document.querySelector('.poster-container').style.display = 'none';
   document.querySelector('.overlay').style.display = 'none';
   document.querySelector('.info').style.display = 'none';
-  document.querySelector('.quality-selector').style.display = 'none';
   playBtn.style.display = 'none';
   
-  const qualityData = movieQualities[selectedQuality];
-  if (qualityData) {
-    video.src = `/api/stream/${encodeURIComponent(id)}?quality=${selectedQuality}`;
-  } else {
-    video.src = `/api/stream/${encodeURIComponent(id)}`;
-  }
-  
   video.classList.add('playing');
+  video.src = `/api/stream/${encodeURIComponent(id)}`;
   video.load();
   video.play();
+  
   loading.classList.add('show');
 });
 
@@ -788,7 +735,6 @@ playBtn.addEventListener('click', () => {
 // ============================================================
 video.addEventListener('loadeddata', () => {
   loading.classList.remove('show');
-  controls.classList.add('visible');
   timeDuration.textContent = formatTime(video.duration);
 });
 
@@ -815,7 +761,6 @@ video.addEventListener('waiting', () => {
 // 🎯 دکمه‌های کنترل
 // ============================================================
 
-// پخش/توقف
 btnPlayPause.addEventListener('click', () => {
   if (video.paused) {
     video.play();
@@ -824,17 +769,15 @@ btnPlayPause.addEventListener('click', () => {
   }
 });
 
-// ۱۰ ثانیه عقب
 btnSkipBack.addEventListener('click', () => {
   video.currentTime = Math.max(0, video.currentTime - 10);
 });
 
-// ۱۰ ثانیه جلو
 btnSkipForward.addEventListener('click', () => {
   video.currentTime = Math.min(video.duration, video.currentTime + 10);
 });
 
-// قطع/وصل صدا
+let isMuted = false;
 btnMute.addEventListener('click', () => {
   isMuted = !isMuted;
   video.muted = isMuted;
@@ -845,7 +788,6 @@ btnMute.addEventListener('click', () => {
   }
 });
 
-// تمام صفحه
 btnFullscreen.addEventListener('click', () => {
   if (document.fullscreenElement) {
     document.exitFullscreen();
@@ -862,7 +804,6 @@ document.addEventListener('fullscreenchange', () => {
   }
 });
 
-// کلیک روی نوار پیشرفت
 progressBar.addEventListener('click', (e) => {
   const rect = progressBar.getBoundingClientRect();
   const x = (e.clientX - rect.left) / rect.width;
@@ -878,24 +819,6 @@ function formatTime(seconds) {
   const s = Math.floor(seconds % 60);
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
-
-// ============================================================
-// 🖱️ نمایش/مخفی کردن کنترل‌ها
-// ============================================================
-let controlsTimeout;
-function showControls() {
-  controls.classList.add('visible');
-  clearTimeout(controlsTimeout);
-  controlsTimeout = setTimeout(() => {
-    if (!video.paused) {
-      controls.classList.remove('visible');
-    }
-  }, 3000);
-}
-
-document.addEventListener('mousemove', showControls);
-document.addEventListener('touchstart', showControls);
-setTimeout(showControls, 1000);
 
 // ============================================================
 // ⌨️ کیبورد
