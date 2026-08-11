@@ -1,5 +1,9 @@
 const { getDb } = require("../lib/db");
 
+// ============================================================
+// 📦 وضعیت‌های کاربر
+// ============================================================
+
 module.exports = async (req, res) => {
   if (req.method !== "POST") {
     res.status(200).send("OK");
@@ -19,6 +23,7 @@ module.exports = async (req, res) => {
   const callback = update && update.callback_query;
 
   console.log("[bot] 📩 دریافت شد");
+  if (callback) console.log("[bot] 📞 Callback:", callback.data);
 
   // ============================================================
   // 📞 مدیریت Callback (دکمه‌های شیشه‌ای)
@@ -27,6 +32,7 @@ module.exports = async (req, res) => {
     const data = callback.data;
     const chatId = callback.message.chat.id;
     const fromId = String((callback.from && callback.from.id) || "");
+    const messageId = callback.message.message_id;
 
     if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
       await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
@@ -34,161 +40,156 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== شروع فرآیند افزودن فیلم =====
-    if (data === 'new_movie') {
-      const db = await getDb();
-      
-      // پاک کردن pending قبلی
+    const db = await getDb();
+
+    // ===== دکمه /start از منو =====
+    if (data === 'start_menu') {
+      const keyboard = {
+        inline_keyboard: [
+          [
+            { text: '🎬 افزودن فیلم', callback_data: 'start_new_movie' },
+            { text: '📝 افزودن متن', callback_data: 'start_new_text' }
+          ]
+        ]
+      };
+
+      await sendMessage(BOT_TOKEN, chatId, 
+        `🎬 به ربات فیلم‌پروکسی خوش آمدید!\n\n` +
+        `لطفاً یکی از گزینه‌های زیر رو انتخاب کنید:`,
+        keyboard
+      );
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // ===== دکمه "افزودن فیلم" =====
+    if (data === 'start_new_movie') {
       await db.collection("pending_movies").deleteMany({ userId: fromId });
-      
-      await sendMessage(BOT_TOKEN, chatId, 
-        `🎬 لطفاً اسم فیلم را وارد کنید:\n\n` +
-        `(فقط حروف و اعداد انگلیسی، بدون فاصله)\n` +
-        `مثال: TheGodfather`
-      );
-      
-      res.status(200).json({ ok: true });
-      return;
-    }
 
-    // ===== شروع فرآیند افزودن متن =====
-    if (data === 'new_text') {
-      await sendMessage(BOT_TOKEN, chatId, 
-        `📝 لطفاً متن مورد نظر را تایپ کنید:`
-      );
-      
-      res.status(200).json({ ok: true });
-      return;
-    }
-
-    // ===== ادامه بعد از اسم فیلم =====
-    if (data === 'movie_name_done') {
-      const db = await getDb();
-      const pendingMovie = await db.collection("pending_movies").findOne({
+      await db.collection("pending_movies").insertOne({
         userId: fromId,
-        status: 'waiting_for_name'
+        status: 'waiting_for_movie_name',
+        createdAt: new Date(),
       });
 
-      if (!pendingMovie || !pendingMovie.movieName) {
-        await sendMessage(BOT_TOKEN, chatId, '❌ مشکلی پیش اومد. دوباره از /start استفاده کن.');
+      await sendMessage(BOT_TOKEN, chatId, 
+        `🎬 اسم فیلم رو وارد کنید.\n\n` +
+        `(فقط حروف انگلیسی و اعداد، بدون فاصله - به جای فاصله از - استفاده کنید)\n` +
+        `مثال: The-Last-Dance`
+      );
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // ===== دکمه "افزودن متن" =====
+    if (data === 'start_new_text') {
+      await sendMessage(BOT_TOKEN, chatId, 
+        `📝 متن مورد نظر رو تایپ کنید.\n\n` +
+        `(متن می‌تونه فارسی یا انگلیسی باشه)`
+      );
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // ===== دکمه "همه قسمت‌ها رو فرستادم" =====
+    if (data === 'all_qualities_sent') {
+      const pending = await db.collection("pending_movies").findOne({
+        userId: fromId,
+        status: 'waiting_for_quality'
+      });
+
+      if (!pending) {
+        await sendMessage(BOT_TOKEN, chatId, '❌ مشکلی پیش اومد. دوباره تلاش کن.');
+        res.status(200).json({ ok: true });
+        return;
+      }
+
+      const qualities = ['360', '480', '720', '1080'];
+      const allExist = qualities.every(q => pending.qualities && pending.qualities[q]);
+
+      if (!allExist) {
+        const missing = qualities.filter(q => !pending.qualities || !pending.qualities[q]);
+        await sendMessage(BOT_TOKEN, chatId, `❌ هنوز همه کیفیت‌ها رو نفرستادی!\nکیفیت‌های باقی‌مانده: ${missing.join(', ')}`);
+        res.status(200).json({ ok: true });
+        return;
+      }
+
+      await db.collection("movies").insertOne({
+        name: pending.movieName,
+        channelUsername: CHANNEL_USERNAME,
+        posterMessageId: pending.posterMessageId,
+        qualities: pending.qualities,
+        createdAt: new Date(),
+        userId: fromId,
+      });
+
+      await db.collection("pending_movies").deleteOne({ _id: pending._id });
+
+      const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(pending.movieName)}`;
+      await sendMessage(BOT_TOKEN, chatId, 
+        `✅ فیلم با موفقیت ذخیره شد!\n\n` +
+        `🎬 ${pending.movieName}\n` +
+        `📺 کیفیت‌ها: 360p, 480p, 720p, 1080p\n` +
+        `🔗 لینک: ${link}`
+      );
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+
+    // ===== دکمه‌های کیفیت =====
+    if (data.startsWith('quality_')) {
+      const quality = data.replace('quality_', '');
+      const qualityMap = {
+        '360': 'کیفیت ۳۶۰',
+        '480': 'کیفیت ۴۸۰',
+        '720': 'کیفیت ۷۲۰',
+        '1080': 'کیفیت ۱۰۸۰'
+      };
+
+      const pending = await db.collection("pending_movies").findOne({
+        userId: fromId,
+        status: 'waiting_for_quality'
+      });
+
+      if (!pending) {
+        await sendMessage(BOT_TOKEN, chatId, '❌ مشکلی پیش اومد. دوباره تلاش کن.');
+        res.status(200).json({ ok: true });
+        return;
+      }
+
+      if (!pending.qualities) pending.qualities = {};
+
+      if (pending.qualities[quality]) {
+        await sendMessage(BOT_TOKEN, chatId, `⏳ ${qualityMap[quality]} قبلاً ارسال شده. کیفیت بعدی رو بفرست.`);
         res.status(200).json({ ok: true });
         return;
       }
 
       await db.collection("pending_movies").updateOne(
-        { _id: pendingMovie._id },
-        { $set: { status: 'waiting_for_poster' } }
+        { _id: pending._id },
+        { $set: { currentQuality: quality } }
       );
 
       await sendMessage(BOT_TOKEN, chatId, 
-        `✅ اسم فیلم ثبت شد: "${pendingMovie.movieName}"\n\n` +
-        `🖼️ حالا پوستر فیلم رو بفرست (یه عکس).`
+        `📤 لطفاً فایل ${qualityMap[quality]} رو بفرست.\n\n` +
+        `(فایل ویدیویی با کیفیت ${quality}p)`
       );
-      
-      res.status(200).json({ ok: true });
-      return;
-    }
-
-    // ===== تکمیل فرآیند کیفیت‌ها =====
-    if (data === 'qualities_done') {
-      const db = await getDb();
-      const pendingMovie = await db.collection("pending_movies").findOne({
-        userId: fromId,
-        status: 'waiting_for_qualities'
-      });
-
-      if (pendingMovie) {
-        const qualities = pendingMovie.qualities || {};
-        
-        // مرتب‌سازی کیفیت‌ها بر اساس ترتیب
-        const qualityOrder = ['360p', '480p', '720p', '1080p'];
-        const sortedQualities = {};
-        let bestQuality = null;
-        let bestQualityData = null;
-
-        for (const q of qualityOrder) {
-          if (qualities[q]) {
-            sortedQualities[q] = qualities[q];
-            if (!bestQuality) {
-              bestQuality = q;
-              bestQualityData = qualities[q];
-            }
-          }
-        }
-
-        // ذخیره نهایی
-        await db.collection("movies").insertOne({
-          name: pendingMovie.movieName,
-          channelUsername: CHANNEL_USERNAME,
-          posterMessageId: pendingMovie.posterMessageId,
-          qualities: sortedQualities,
-          bestQuality: bestQuality,
-          bestQualityMessageId: bestQualityData?.messageId || pendingMovie.messageId,
-          createdAt: new Date(),
-          userId: fromId,
-        });
-
-        await db.collection("pending_movies").deleteOne({ _id: pendingMovie._id });
-
-        const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(pendingMovie.movieName)}`;
-        
-        // نمایش کیفیت‌های ذخیره شده
-        let qualityText = '';
-        for (const q of qualityOrder) {
-          if (sortedQualities[q]) {
-            const size = (sortedQualities[q].fileSize / 1024 / 1024).toFixed(1);
-            qualityText += `\n- ${q} (${size} MB)`;
-          }
-        }
-
-        await sendMessage(BOT_TOKEN, chatId, 
-          `✅ فیلم "${pendingMovie.movieName}" با موفقیت ذخیره شد!\n\n` +
-          `📺 کیفیت‌های موجود:${qualityText}\n` +
-          `🔗 لینک: ${link}`
-        );
-      }
 
       res.status(200).json({ ok: true });
       return;
     }
 
-    // ===== متون =====
-    if (data.startsWith('addtext_')) {
-      const tempId = data.replace('addtext_', '');
-      const db = await getDb();
-      
-      const tempDoc = await db.collection("temp_texts").findOne({ 
-        tempId: tempId,
-        expiresAt: { $gt: new Date() }
-      });
-
-      if (!tempDoc) {
-        await sendMessage(BOT_TOKEN, chatId, '❌ لینک منقضی شده است.');
-        res.status(200).json({ ok: true });
-        return;
-      }
-
-      await db.collection("texts").insertOne({
-        text: tempDoc.text,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        userId: fromId,
-      });
-
-      await db.collection("temp_texts").deleteOne({ tempId: tempId });
-      await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت اضافه شد:\n\n"${tempDoc.text}"`);
-
-      res.status(200).json({ ok: true });
-      return;
-    }
-
-    if (data === 'ignore') {
-      await sendMessage(BOT_TOKEN, chatId, '❌ متن اضافه نشد.');
-      res.status(200).json({ ok: true });
-      return;
-    }
+    res.status(200).json({ ok: true });
+    return;
   }
 
+  // ============================================================
+  // 📥 مدیریت پیام‌ها
+  // ============================================================
   if (!message) {
     res.status(200).json({ ok: true });
     return;
@@ -200,30 +201,32 @@ module.exports = async (req, res) => {
   const hasPhoto = message.photo && message.photo.length > 0;
   const text = message.text || "";
 
+  console.log("[bot] 📝 از:", fromId, "متن:", text, "فایل:", !!hasFile, "عکس:", !!hasPhoto);
+
   if (ALLOWED_USER_IDS.length > 0 && !ALLOWED_USER_IDS.includes(fromId)) {
     await sendMessage(BOT_TOKEN, chatId, "متاسفم، اجازه استفاده از این بات رو نداری.");
     res.status(200).json({ ok: true });
     return;
   }
 
+  const db = await getDb();
+
   // ============================================================
-  // 📋 دستورات اصلی (منو)
+  // 🏠 دستور /start
   // ============================================================
-  
-  // ===== /start =====
   if (text === '/start') {
     const keyboard = {
       inline_keyboard: [
         [
-          { text: '🎬 افزودن فیلم', callback_data: 'new_movie' },
-          { text: '📝 افزودن متن', callback_data: 'new_text' }
+          { text: '🎬 افزودن فیلم', callback_data: 'start_new_movie' },
+          { text: '📝 افزودن متن', callback_data: 'start_new_text' }
         ]
       ]
     };
 
     await sendMessage(BOT_TOKEN, chatId, 
-      `🎥 به ربات فیلم‌پروکسی خوش آمدید!\n\n` +
-      `لطفاً یکی از گزینه‌های زیر را انتخاب کنید:`,
+      `🎬 به ربات فیلم‌پروکسی خوش آمدید!\n\n` +
+      `لطفاً یکی از گزینه‌های زیر رو انتخاب کنید:`,
       keyboard
     );
 
@@ -231,266 +234,136 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // ===== /new_movie =====
-  if (text === '/new_movie') {
-    const db = await getDb();
-    await db.collection("pending_movies").deleteMany({ userId: fromId });
-    
-    await sendMessage(BOT_TOKEN, chatId, 
-      `🎬 لطفاً اسم فیلم را وارد کنید:\n\n` +
-      `(فقط حروف و اعداد انگلیسی، بدون فاصله)\n` +
-      `مثال: TheGodfather`
-    );
-    
-    res.status(200).json({ ok: true });
-    return;
-  }
-
-  // ===== /new_text =====
-  if (text === '/new_text') {
-    await sendMessage(BOT_TOKEN, chatId, 
-      `📝 لطفاً متن مورد نظر را تایپ کنید:`
-    );
-    
-    res.status(200).json({ ok: true });
-    return;
-  }
-
   // ============================================================
-  // 📝 دریافت اسم فیلم
+  // 📝 مدیریت متن (افزودن متن یا اسم فیلم)
   // ============================================================
-  if (text && !text.startsWith('/')) {
-    const db = await getDb();
-    const pendingMovie = await db.collection("pending_movies").findOne({
+  if (text && !text.startsWith('/') && !hasFile && !hasPhoto) {
+    // ===== چک کردن اینکه کاربر در حالت waiting_for_movie_name هست =====
+    const pending = await db.collection("pending_movies").findOne({
       userId: fromId,
-      status: 'waiting_for_name'
+      status: 'waiting_for_movie_name'
     });
 
-    if (pendingMovie) {
-      // اگر در حالت waiting_for_name هستیم
-      const slug = sanitizeSlug(text);
-      if (!slug || slug.length < 2) {
+    if (pending) {
+      // ===== دریافت اسم فیلم =====
+      const movieName = text.trim().replace(/\s+/g, '-').toLowerCase();
+
+      if (!/^[a-zA-Z0-9\-]+$/.test(movieName)) {
         await sendMessage(BOT_TOKEN, chatId, 
-          '❌ اسم فیلم معتبر نیست.\n' +
-          'لطفاً فقط از حروف و اعداد انگلیسی استفاده کنید.\n' +
-          'مثال: TheGodfather'
+          '❌ اسم فیلم باید فقط شامل حروف انگلیسی، اعداد و "-" باشه.\n' +
+          'مثال: The-Last-Dance'
+        );
+        res.status(200).json({ ok: true });
+        return;
+      }
+
+      const existing = await db.collection("movies").findOne({ name: movieName });
+      if (existing) {
+        await sendMessage(BOT_TOKEN, chatId, 
+          `❌ فیلمی با اسم "${movieName}" قبلاً وجود داره.\n` +
+          `لطفاً اسم دیگه‌ای انتخاب کن.`
         );
         res.status(200).json({ ok: true });
         return;
       }
 
       await db.collection("pending_movies").updateOne(
-        { _id: pendingMovie._id },
-        { $set: { movieName: slug, status: 'waiting_for_poster' } }
+        { _id: pending._id },
+        { 
+          $set: { 
+            movieName: movieName,
+            status: 'waiting_for_poster'
+          } 
+        }
       );
-
-      const keyboard = {
-        inline_keyboard: [
-          [
-            { text: '✅ ادامه', callback_data: 'movie_name_done' }
-          ]
-        ]
-      };
 
       await sendMessage(BOT_TOKEN, chatId, 
-        `✅ اسم فیلم ثبت شد: "${slug}"\n\n` +
-        `🖼️ حالا پوستر فیلم رو بفرست (یه عکس).`,
-        keyboard
+        `✅ اسم فیلم ثبت شد: "${movieName}"\n\n` +
+        `🖼️ حالا پوستر فیلم رو بفرست (یه عکس).`
       );
-      
+
       res.status(200).json({ ok: true });
       return;
     }
 
-    // ============================================================
-    // 🖼️ دریافت پوستر
-    // ============================================================
-    if (hasPhoto) {
-      const pendingMovie = await db.collection("pending_movies").findOne({
-        userId: fromId,
-        status: 'waiting_for_poster'
-      });
+    // ===== افزودن متن (اگر در حالت waiting_for_movie_name نبود) =====
+    await db.collection("texts").insertOne({
+      text: text.trim(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userId: fromId,
+    });
 
-      if (pendingMovie) {
-        try {
-          const forwardPhoto = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: CHANNEL_USERNAME,
-              from_chat_id: chatId,
-              message_id: message.message_id,
-            }),
-          });
+    await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت اضافه شد:\n\n"${text.trim()}"`);
 
-          const photoResult = await forwardPhoto.json();
+    res.status(200).json({ ok: true });
+    return;
+  }
 
-          if (!photoResult.ok) {
-            throw new Error(photoResult.description || "خطا در ارسال پوستر");
-          }
+  // ============================================================
+  // 🖼️ دریافت پوستر (عکس)
+  // ============================================================
+  if (hasPhoto) {
+    const pending = await db.collection("pending_movies").findOne({
+      userId: fromId,
+      status: 'waiting_for_poster'
+    });
 
-          const posterMessageId = photoResult.result.message_id;
+    if (pending) {
+      try {
+        const forwardPhoto = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: CHANNEL_USERNAME,
+            from_chat_id: chatId,
+            message_id: message.message_id,
+          }),
+        });
 
-          await db.collection("pending_movies").updateOne(
-            { _id: pendingMovie._id },
-            { 
-              $set: { 
-                posterMessageId: posterMessageId,
-                status: 'waiting_for_qualities',
-                qualities: {}
-              } 
-            }
-          );
+        const photoResult = await forwardPhoto.json();
 
-          const qualityKeyboard = {
-            inline_keyboard: [
-              [
-                { text: '✅ همه کیفیت‌ها رو فرستادم', callback_data: 'qualities_done' }
-              ]
-            ]
-          };
-
-          await sendMessage(BOT_TOKEN, chatId, 
-            `✅ پوستر ذخیره شد!\n\n` +
-            `📤 حالا فیلم رو با کیفیت‌های مختلف به من بفرست.\n\n` +
-            `ترتیب ارسال کیفیت‌ها:\n` +
-            `1️⃣ فیلم 360p\n` +
-            `2️⃣ فیلم 480p\n` +
-            `3️⃣ فیلم 720p\n` +
-            `4️⃣ فیلم 1080p\n\n` +
-            `هر کیفیت رو به عنوان یک پیام جداگانه بفرست.\n` +
-            `بعد از فرستادن همه کیفیت‌ها، دکمه پایین رو بزن.`,
-            qualityKeyboard
-          );
-
-        } catch (err) {
-          console.error("[bot] ❌ Error saving poster:", err);
-          await sendMessage(BOT_TOKEN, chatId, '❌ خطا در ذخیره پوستر. دوباره تلاش کن.');
+        if (!photoResult.ok) {
+          throw new Error(photoResult.description || "خطا در ارسال پوستر");
         }
 
-        res.status(200).json({ ok: true });
-        return;
-      }
-    }
+        const posterMessageId = photoResult.result.message_id;
 
-    // ============================================================
-    // 📤 دریافت فیلم با کیفیت‌های مختلف
-    // ============================================================
-    if (hasFile) {
-      const pendingMovie = await db.collection("pending_movies").findOne({
-        userId: fromId,
-        status: 'waiting_for_qualities'
-      });
-
-      if (pendingMovie) {
-        try {
-          const forward = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              chat_id: CHANNEL_USERNAME,
-              from_chat_id: chatId,
-              message_id: message.message_id,
-            }),
-          });
-
-          const result = await forward.json();
-
-          if (!result.ok) {
-            throw new Error(result.description || "خطا در ارسال فیلم");
+        await db.collection("pending_movies").updateOne(
+          { _id: pending._id },
+          { 
+            $set: { 
+              posterMessageId: posterMessageId,
+              status: 'waiting_for_quality',
+              qualities: {},
+              currentQuality: '360'
+            } 
           }
+        );
 
-          const fileMessageId = result.result.message_id;
-          const fileSize = message.document?.file_size || message.video?.file_size || 0;
-
-          // تشخیص کیفیت بر اساس ترتیب
-          const existingQualities = pendingMovie.qualities || {};
-          const qualityOrder = ['360p', '480p', '720p', '1080p'];
-          let assignedQuality = null;
-
-          for (const q of qualityOrder) {
-            if (!existingQualities[q]) {
-              assignedQuality = q;
-              break;
-            }
-          }
-
-          if (!assignedQuality) {
-            await sendMessage(BOT_TOKEN, chatId, 
-              '❌ همه کیفیت‌ها قبلاً ارسال شده‌اند.\n' +
-              'اگر فیلم بیشتری دارید، دکمه "همه کیفیت‌ها رو فرستادم" رو بزنید.'
-            );
-            res.status(200).json({ ok: true });
-            return;
-          }
-
-          const qualityField = `qualities.${assignedQuality}`;
-          await db.collection("pending_movies").updateOne(
-            { _id: pendingMovie._id },
-            { 
-              $set: { 
-                [qualityField]: {
-                  messageId: fileMessageId,
-                  fileSize: fileSize,
-                  createdAt: new Date()
-                }
-              } 
-            }
-          );
-
-          // بررسی اینکه آیا همه کیفیت‌ها کامل شده
-          const updatedPending = await db.collection("pending_movies").findOne({ _id: pendingMovie._id });
-          const currentQualities = updatedPending.qualities || {};
-          const completedCount = Object.keys(currentQualities).length;
-
-          await sendMessage(BOT_TOKEN, chatId, 
-            `✅ فیلم با کیفیت ${assignedQuality} دریافت شد!\n` +
-            `حجم: ${(fileSize / 1024 / 1024).toFixed(1)} MB\n\n` +
-            `📊 کیفیت‌های ارسال شده: ${completedCount} از 4\n` +
-            `${completedCount < 4 ? 'کیفیت‌های بعدی رو بفرست.' : 'همه کیفیت‌ها کامل شد!'}`
-          );
-
-        } catch (err) {
-          console.error("[bot] ❌ Error saving quality:", err);
-          await sendMessage(BOT_TOKEN, chatId, '❌ خطا در ذخیره فیلم. دوباره تلاش کن.');
-        }
-
-        res.status(200).json({ ok: true });
-        return;
-      }
-    }
-
-    // ============================================================
-    // 📝 پیام متنی برای افزودن به لیست متن‌ها
-    // ============================================================
-    if (text && !text.startsWith('/') && text.length > 2) {
-      const db = await getDb();
-      
-      // چک کردن اینکه آیا کاربر در حال افزودن متن است
-      const tempId = Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
-      
-      await db.collection("temp_texts").insertOne({
-        tempId: tempId,
-        text: text,
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000),
-      });
-
-      const keyboard = {
-        inline_keyboard: [
-          [
-            { text: '✅ بله، اضافه کن', callback_data: `addtext_${tempId}` },
-            { text: '❌ نه، فقط چت', callback_data: 'ignore' }
+        const keyboard = {
+          inline_keyboard: [
+            [{ text: '📺 کیفیت 360', callback_data: 'quality_360' }],
+            [{ text: '📺 کیفیت 480', callback_data: 'quality_480' }],
+            [{ text: '📺 کیفیت 720', callback_data: 'quality_720' }],
+            [{ text: '📺 کیفیت 1080', callback_data: 'quality_1080' }],
+            [{ text: '✅ همه قسمت‌ها رو فرستادم', callback_data: 'all_qualities_sent' }]
           ]
-        ]
-      };
+        };
 
-      const previewText = text.length > 50 ? text.substring(0, 50) + '...' : text;
+        await sendMessage(BOT_TOKEN, chatId, 
+          `✅ پوستر با موفقیت ذخیره شد!\n\n` +
+          `🎬 فیلم: ${pending.movieName}\n\n` +
+          `📤 حالا کیفیت‌های مختلف فیلم رو بفرست.\n` +
+          `از کیفیت ۳۶۰ شروع کن و به ترتیب برو بالا.\n\n` +
+          `هر کیفیت رو که می‌فرستی، روی دکمه مربوطه کلیک کن.`,
+          keyboard
+        );
 
-      await sendMessage(BOT_TOKEN, chatId, 
-        `📝 آیا می‌خواهید این متن را به لیست متن‌ها اضافه کنید؟\n\n"${previewText}"`,
-        keyboard
-      );
+      } catch (err) {
+        console.error("[bot] ❌ Error saving poster:", err);
+        await sendMessage(BOT_TOKEN, chatId, '❌ خطا در ذخیره پوستر. دوباره تلاش کن.');
+      }
 
       res.status(200).json({ ok: true });
       return;
@@ -498,11 +371,102 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 📁 اگر هیچکدام از حالت‌ها نبود
+  // 🎬 دریافت فایل (کیفیت‌های فیلم)
   // ============================================================
+  if (hasFile) {
+    const pending = await db.collection("pending_movies").findOne({
+      userId: fromId,
+      status: 'waiting_for_quality'
+    });
+
+    if (pending && pending.currentQuality) {
+      const quality = pending.currentQuality;
+      const qualityMap = {
+        '360': 'کیفیت ۳۶۰',
+        '480': 'کیفیت ۴۸۰',
+        '720': 'کیفیت ۷۲۰',
+        '1080': 'کیفیت ۱۰۸۰'
+      };
+
+      try {
+        const forwardFile = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/forwardMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: CHANNEL_USERNAME,
+            from_chat_id: chatId,
+            message_id: message.message_id,
+          }),
+        });
+
+        const fileResult = await forwardFile.json();
+
+        if (!fileResult.ok) {
+          throw new Error(fileResult.description || "خطا در ارسال فیلم");
+        }
+
+        const fileMessageId = fileResult.result.message_id;
+
+        const updateQuery = {};
+        updateQuery[`qualities.${quality}`] = fileMessageId;
+
+        await db.collection("pending_movies").updateOne(
+          { _id: pending._id },
+          { $set: updateQuery }
+        );
+
+        const qualities = ['360', '480', '720', '1080'];
+        const currentIndex = qualities.indexOf(quality);
+        const nextQuality = qualities[currentIndex + 1];
+
+        if (nextQuality) {
+          await db.collection("pending_movies").updateOne(
+            { _id: pending._id },
+            { $set: { currentQuality: nextQuality } }
+          );
+
+          await sendMessage(BOT_TOKEN, chatId, 
+            `✅ ${qualityMap[quality]} با موفقیت ذخیره شد!\n\n` +
+            `📤 حالا ${qualityMap[nextQuality]} رو بفرست.`
+          );
+        } else {
+          await db.collection("pending_movies").updateOne(
+            { _id: pending._id },
+            { $set: { currentQuality: null } }
+          );
+
+          await sendMessage(BOT_TOKEN, chatId, 
+            `✅ همه کیفیت‌ها با موفقیت ذخیره شدند!\n\n` +
+            `برای نهایی کردن، دکمه "همه قسمت‌ها رو فرستادم" رو بزن.`
+          );
+        }
+
+      } catch (err) {
+        console.error("[bot] ❌ Error saving quality:", err);
+        await sendMessage(BOT_TOKEN, chatId, `❌ خطا در ذخیره ${qualityMap[quality]}. دوباره تلاش کن.`);
+      }
+
+      res.status(200).json({ ok: true });
+      return;
+    }
+  }
+
+  // ============================================================
+  // 🎬 اگر هیچکدام از حالت‌ها نبود
+  // ============================================================
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '🎬 افزودن فیلم', callback_data: 'start_new_movie' },
+        { text: '📝 افزودن متن', callback_data: 'start_new_text' }
+      ]
+    ]
+  };
+
   await sendMessage(BOT_TOKEN, chatId, 
     `❓ دستور نامعتبر.\n\n` +
-    `لطفاً از دستور /start استفاده کنید.`
+    `لطفاً از دکمه‌های زیر استفاده کنید:`,
+    keyboard
   );
 
   res.status(200).json({ ok: true });
@@ -511,15 +475,6 @@ module.exports = async (req, res) => {
 // ============================================================
 // 🛠 توابع کمکی
 // ============================================================
-
-function sanitizeSlug(text) {
-  return text
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[\/\\?%*:|"'<>#&=]+/g, "")
-    .replace(/[a-zA-Z]/g, (c) => c.toLowerCase())
-    .slice(0, 60);
-}
 
 async function sendMessage(token, chatId, text, keyboard = null) {
   const payload = { chat_id: chatId, text };
