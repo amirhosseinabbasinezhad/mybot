@@ -227,7 +227,7 @@
   }
 
   /* ==========================================================
-     🎮 نوار کنترل (باریک و شیک)
+     🎮 نوار کنترل (باریک و ارتفاع کم)
      ========================================================== */
   .controls {
     position: absolute;
@@ -237,12 +237,12 @@
     z-index: 6;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     direction: ltr;
     background: rgba(0,0,0,0.5);
     backdrop-filter: blur(12px);
-    padding: 6px 12px;
-    border-radius: 10px;
+    padding: 4px 10px;
+    border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.05);
     width: auto;
     max-width: 92%;
@@ -254,14 +254,14 @@
     border: none;
     color: #fff;
     cursor: pointer;
-    padding: 4px 4px;
-    border-radius: 6px;
+    padding: 2px 4px;
+    border-radius: 4px;
     transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 28px;
-    min-height: 28px;
+    min-width: 22px;
+    min-height: 22px;
     flex-shrink: 0;
   }
 
@@ -274,19 +274,19 @@
   }
 
   .controls .btn-ctrl svg {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     fill: white;
   }
 
   .controls .btn-play-big {
     background: rgba(255,255,255,0.08);
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     padding: 0;
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 26px;
+    min-height: 26px;
   }
 
   .controls .btn-play-big:hover {
@@ -294,8 +294,8 @@
   }
 
   .controls .btn-play-big svg {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
   }
 
   .controls .progress-wrapper {
@@ -307,16 +307,16 @@
   }
 
   .controls .time {
-    font-size: 10px;
+    font-size: 9px;
     color: #aaa;
-    min-width: 32px;
+    min-width: 28px;
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
   }
 
   .controls .progress-bar {
     flex: 1;
-    height: 3px;
+    height: 2px;
     background: rgba(255,255,255,0.2);
     border-radius: 2px;
     position: relative;
@@ -326,7 +326,7 @@
   }
 
   .controls .progress-bar:hover {
-    height: 4px;
+    height: 3px;
   }
 
   .controls .progress-fill {
@@ -344,8 +344,8 @@
   }
 
   .controls .right-buttons .btn-ctrl svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
   }
 
   /* ==========================================================
@@ -362,40 +362,40 @@
 
     .controls {
       bottom: 60px;
-      padding: 6px 10px;
-      gap: 6px;
-      border-radius: 10px;
+      padding: 3px 8px;
+      gap: 4px;
+      border-radius: 8px;
       max-width: 96%;
     }
 
-    .controls .btn-ctrl { min-width: 24px; min-height: 24px; padding: 2px 3px; }
-    .controls .btn-ctrl svg { width: 14px; height: 14px; }
-    .controls .btn-play-big { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
-    .controls .btn-play-big svg { width: 16px; height: 16px; }
-    .controls .time { font-size: 9px; min-width: 28px; }
-    .controls .right-buttons .btn-ctrl svg { width: 12px; height: 12px; }
+    .controls .btn-ctrl { min-width: 18px; min-height: 18px; padding: 1px 2px; }
+    .controls .btn-ctrl svg { width: 12px; height: 12px; }
+    .controls .btn-play-big { width: 22px; height: 22px; min-width: 22px; min-height: 22px; }
+    .controls .btn-play-big svg { width: 12px; height: 12px; }
+    .controls .time { font-size: 8px; min-width: 24px; }
+    .controls .right-buttons .btn-ctrl svg { width: 10px; height: 10px; }
     .controls .progress-bar { height: 2px; }
   }
 
   /* ==========================================================
-     🖥️ تلویزیون/دسکتاپ: 10px از پایین + باریک‌تر
+     🖥️ تلویزیون/دسکتاپ: 10px از پایین
      ========================================================== */
   @media (min-width: 601px) {
     .controls {
       bottom: 10px;
-      padding: 4px 10px;
-      gap: 6px;
-      border-radius: 8px;
+      padding: 3px 8px;
+      gap: 4px;
+      border-radius: 6px;
       max-width: 80%;
     }
 
-    .controls .btn-ctrl { min-width: 24px; min-height: 24px; padding: 2px 3px; }
-    .controls .btn-ctrl svg { width: 14px; height: 14px; }
-    .controls .btn-play-big { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
-    .controls .btn-play-big svg { width: 16px; height: 16px; }
-    .controls .time { font-size: 10px; min-width: 30px; }
-    .controls .right-buttons .btn-ctrl svg { width: 13px; height: 13px; }
-    .controls .progress-bar { height: 3px; }
+    .controls .btn-ctrl { min-width: 20px; min-height: 20px; padding: 2px 3px; }
+    .controls .btn-ctrl svg { width: 12px; height: 12px; }
+    .controls .btn-play-big { width: 24px; height: 24px; min-width: 24px; min-height: 24px; }
+    .controls .btn-play-big svg { width: 14px; height: 14px; }
+    .controls .time { font-size: 9px; min-width: 26px; }
+    .controls .right-buttons .btn-ctrl svg { width: 11px; height: 11px; }
+    .controls .progress-bar { height: 2px; }
   }
 
   /* ==========================================================
@@ -403,14 +403,15 @@
      ========================================================== */
   @media (min-width: 1200px) {
     .controls {
-      padding: 6px 14px;
-      gap: 8px;
+      padding: 4px 12px;
+      gap: 6px;
       max-width: 60%;
     }
-    .controls .btn-ctrl { min-width: 30px; min-height: 30px; }
-    .controls .btn-ctrl svg { width: 16px; height: 16px; }
-    .controls .btn-play-big { width: 34px; height: 34px; min-width: 34px; min-height: 34px; }
-    .controls .btn-play-big svg { width: 18px; height: 18px; }
+    .controls .btn-ctrl { min-width: 24px; min-height: 24px; }
+    .controls .btn-ctrl svg { width: 14px; height: 14px; }
+    .controls .btn-play-big { width: 28px; height: 28px; min-width: 28px; min-height: 28px; }
+    .controls .btn-play-big svg { width: 16px; height: 16px; }
+    .controls .time { font-size: 10px; min-width: 30px; }
   }
 </style>
 </head>
@@ -454,7 +455,7 @@
   </div>
 
   <!-- ==========================================================
-       🎮 نوار کنترل (باریک و شیک)
+       🎮 نوار کنترل (باریک و ارتفاع کم)
        ========================================================== -->
   <div class="controls" id="controls">
     <!-- ۱۰ ثانیه عقب -->
