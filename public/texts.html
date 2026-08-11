@@ -450,7 +450,42 @@
     <div class="brand-mark">📝</div>
     <h1>متن‌ها</h1>
   </div>
-  <a class="btn-back" href="/movies.html">‹ برگشت به فیلم‌ها</a>
+  <div class="user-section">
+    <button class="btn-user" id="userMenuBtn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      <span id="usernameDisplay">کاربر</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="m6 9 6 6 6-6"/>
+      </svg>
+    </button>
+    <div class="user-dropdown" id="userDropdown">
+      <div class="user-info">
+        <div class="user-avatar">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <div class="user-name" id="dropdownUsername">کاربر</div>
+      </div>
+      <button class="btn" id="">
+        <img src="/assets/movie.svg" href="/movies.html" alt="توضیح تصویر" width="200" height="200">
+       متن ها
+      </button>
+      
+      <button class="btn-logout" id="logoutBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        خروج
+      </button>
+    </div>
+  </div>
 </header>
 
 <main>
