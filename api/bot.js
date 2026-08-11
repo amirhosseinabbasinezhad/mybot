@@ -42,8 +42,8 @@ module.exports = async (req, res) => {
 
     const db = await getDb();
 
-    // ===== دکمه /start از منو =====
-    if (data === 'start_menu') {
+    // ===== دکمه برگشت به منو =====
+    if (data === 'back_to_menu') {
       const keyboard = {
         inline_keyboard: [
           [
@@ -52,6 +52,18 @@ module.exports = async (req, res) => {
           ]
         ]
       };
+
+      // حذف پیام قبلی (اختیاری)
+      try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/deleteMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: chatId,
+            message_id: messageId,
+          }),
+        });
+      } catch (e) {}
 
       await sendMessage(BOT_TOKEN, chatId, 
         `🎬 به ربات فیلم‌پروکسی خوش آمدید!\n\n` +
@@ -73,10 +85,17 @@ module.exports = async (req, res) => {
         createdAt: new Date(),
       });
 
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
+        ]
+      };
+
       await sendMessage(BOT_TOKEN, chatId, 
         `🎬 اسم فیلم رو وارد کنید.\n\n` +
-        `(فقط حروف انگلیسی و اعداد، بدون فاصله - به جای فاصله از - استفاده کنید)\n` +
-        `مثال: The-Last-Dance`
+        `(میتونه فارسی یا انگلیسی باشه)\n` +
+        `مثال: مردی که اسب شد`,
+        keyboard
       );
 
       res.status(200).json({ ok: true });
@@ -85,9 +104,16 @@ module.exports = async (req, res) => {
 
     // ===== دکمه "افزودن متن" =====
     if (data === 'start_new_text') {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
+        ]
+      };
+
       await sendMessage(BOT_TOKEN, chatId, 
         `📝 متن مورد نظر رو تایپ کنید.\n\n` +
-        `(متن می‌تونه فارسی یا انگلیسی باشه)`
+        `(متن می‌تونه فارسی یا انگلیسی باشه)`,
+        keyboard
       );
 
       res.status(200).json({ ok: true });
@@ -129,11 +155,19 @@ module.exports = async (req, res) => {
       await db.collection("pending_movies").deleteOne({ _id: pending._id });
 
       const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(pending.movieName)}`;
+      
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
+        ]
+      };
+
       await sendMessage(BOT_TOKEN, chatId, 
         `✅ فیلم با موفقیت ذخیره شد!\n\n` +
         `🎬 ${pending.movieName}\n` +
         `📺 کیفیت‌ها: 360p, 480p, 720p, 1080p\n` +
-        `🔗 لینک: ${link}`
+        `🔗 لینک: ${link}`,
+        keyboard
       );
 
       res.status(200).json({ ok: true });
@@ -174,9 +208,16 @@ module.exports = async (req, res) => {
         { $set: { currentQuality: quality } }
       );
 
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
+        ]
+      };
+
       await sendMessage(BOT_TOKEN, chatId, 
         `📤 لطفاً فایل ${qualityMap[quality]} رو بفرست.\n\n` +
-        `(فایل ویدیویی با کیفیت ${quality}p)`
+        `(فایل ویدیویی با کیفیت ${quality}p)`,
+        keyboard
       );
 
       res.status(200).json({ ok: true });
@@ -245,14 +286,11 @@ module.exports = async (req, res) => {
     });
 
     if (pending) {
-      // ===== دریافت اسم فیلم =====
-      const movieName = text.trim().replace(/\s+/g, '-').toLowerCase();
+      // ===== دریافت اسم فیلم (فارسی مجاز) =====
+      const movieName = text.trim();
 
-      if (!/^[a-zA-Z0-9\-]+$/.test(movieName)) {
-        await sendMessage(BOT_TOKEN, chatId, 
-          '❌ اسم فیلم باید فقط شامل حروف انگلیسی، اعداد و "-" باشه.\n' +
-          'مثال: The-Last-Dance'
-        );
+      if (movieName.length < 2) {
+        await sendMessage(BOT_TOKEN, chatId, '❌ اسم فیلم باید حداقل ۲ کاراکتر باشه.');
         res.status(200).json({ ok: true });
         return;
       }
@@ -277,16 +315,23 @@ module.exports = async (req, res) => {
         }
       );
 
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
+        ]
+      };
+
       await sendMessage(BOT_TOKEN, chatId, 
         `✅ اسم فیلم ثبت شد: "${movieName}"\n\n` +
-        `🖼️ حالا پوستر فیلم رو بفرست (یه عکس).`
+        `🖼️ حالا پوستر فیلم رو بفرست (یه عکس).`,
+        keyboard
       );
 
       res.status(200).json({ ok: true });
       return;
     }
 
-    // ===== افزودن متن (اگر در حالت waiting_for_movie_name نبود) =====
+    // ===== افزودن متن (فقط پیام موفقیت، بدون نمایش متن) =====
     await db.collection("texts").insertOne({
       text: text.trim(),
       createdAt: new Date(),
@@ -294,7 +339,20 @@ module.exports = async (req, res) => {
       userId: fromId,
     });
 
-    await sendMessage(BOT_TOKEN, chatId, `✅ متن با موفقیت اضافه شد:\n\n"${text.trim()}"`);
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '🎬 افزودن فیلم', callback_data: 'start_new_movie' },
+          { text: '📝 افزودن متن', callback_data: 'start_new_text' }
+        ],
+        [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
+      ]
+    };
+
+    await sendMessage(BOT_TOKEN, chatId, 
+      `✅ متن با موفقیت ذخیره شد!`,
+      keyboard
+    );
 
     res.status(200).json({ ok: true });
     return;
@@ -347,7 +405,8 @@ module.exports = async (req, res) => {
             [{ text: '📺 کیفیت 480', callback_data: 'quality_480' }],
             [{ text: '📺 کیفیت 720', callback_data: 'quality_720' }],
             [{ text: '📺 کیفیت 1080', callback_data: 'quality_1080' }],
-            [{ text: '✅ همه قسمت‌ها رو فرستادم', callback_data: 'all_qualities_sent' }]
+            [{ text: '✅ همه قسمت‌ها رو فرستادم', callback_data: 'all_qualities_sent' }],
+            [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
           ]
         };
 
@@ -419,6 +478,12 @@ module.exports = async (req, res) => {
         const currentIndex = qualities.indexOf(quality);
         const nextQuality = qualities[currentIndex + 1];
 
+        const keyboard = {
+          inline_keyboard: [
+            [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
+          ]
+        };
+
         if (nextQuality) {
           await db.collection("pending_movies").updateOne(
             { _id: pending._id },
@@ -427,7 +492,8 @@ module.exports = async (req, res) => {
 
           await sendMessage(BOT_TOKEN, chatId, 
             `✅ ${qualityMap[quality]} با موفقیت ذخیره شد!\n\n` +
-            `📤 حالا ${qualityMap[nextQuality]} رو بفرست.`
+            `📤 حالا ${qualityMap[nextQuality]} رو بفرست.`,
+            keyboard
           );
         } else {
           await db.collection("pending_movies").updateOne(
@@ -437,7 +503,8 @@ module.exports = async (req, res) => {
 
           await sendMessage(BOT_TOKEN, chatId, 
             `✅ همه کیفیت‌ها با موفقیت ذخیره شدند!\n\n` +
-            `برای نهایی کردن، دکمه "همه قسمت‌ها رو فرستادم" رو بزن.`
+            `برای نهایی کردن، دکمه "همه قسمت‌ها رو فرستادم" رو بزن.`,
+            keyboard
           );
         }
 
