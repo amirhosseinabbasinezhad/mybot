@@ -101,6 +101,125 @@
     display: flex;
     gap: 10px;
   }
+.user-section {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-user {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: var(--text);
+    cursor: pointer;
+    padding: 6px 12px;
+    border-radius: 10px;
+    transition: background 0.2s;
+    font-family: inherit;
+    font-size: 14px;
+  }
+
+  .btn-user:hover {
+    background: rgba(255,255,255,0.05);
+  }
+
+  .btn-user svg {
+    stroke: var(--text-muted);
+  }
+
+  .btn-user span {
+    color: var(--text);
+  }
+
+  .user-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    min-width: 180px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: none;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    z-index: 100;
+  }
+
+  .user-dropdown.show {
+    display: block;
+  }
+
+  .user-dropdown .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 10px;
+  }
+
+  .user-dropdown .user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .user-dropdown .user-avatar svg {
+    stroke: var(--text-muted);
+  }
+
+  .user-dropdown .user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .user-dropdown .btn-logout {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    color: #e74c3c;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: inherit;
+    width: 100%;
+    transition: background 0.2s;
+  }
+
+  .user-dropdown .btn-logout:hover {
+    background: rgba(231,76,60,0.1);
+  }
+
+  .user-dropdown .btn-logout svg {
+    stroke: #e74c3c;
+  }
+
+  .search-wrap {
+    max-width: 720px;
+    margin: 0 auto 22px;
+    position: relative;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    pointer-events: none;
+  }
 
   .add-section input {
     flex: 1;
@@ -440,6 +559,12 @@
     .modal-box .modal-body {
       font-size: 14px;
     }
+  }
+    @media (max-width: 600px) {
+    header { flex-direction: column; align-items: stretch; gap: 8px; }
+    .brand { justify-content: center; }
+    .count { text-align: center; }
+    .user-section { align-self: flex-end; }
   }
 </style>
 </head>
