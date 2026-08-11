@@ -144,7 +144,7 @@
     overflow: hidden;
   }
 
-  /* ===== منوی انتخاب کیفیت (دراپ‌داون استاندارد برای TV) ===== */
+  /* ===== منوی انتخاب کیفیت ===== */
   .quality-selector {
     position: absolute;
     bottom: 155px;
@@ -268,7 +268,7 @@
   }
 
   /* ==========================================================
-     🎮 نوار کنترل (همیشه پایین)
+     🎮 نوار کنترل (دقیقاً مثل قبل، بدون تغییر)
      ========================================================== */
   .controls {
     position: absolute;
@@ -288,7 +288,6 @@
     transition: opacity 0.3s ease;
   }
 
-  /* ===== دکمه‌های کنترل ===== */
   .controls .btn-ctrl {
     background: none;
     border: none;
@@ -338,7 +337,6 @@
     height: 22px;
   }
 
-  /* ===== نوار پیشرفت ===== */
   .controls .progress-wrapper {
     flex: 1;
     display: flex;
@@ -377,7 +375,6 @@
     width: 0%;
   }
 
-  /* ===== دکمه‌های سمت راست ===== */
   .controls .right-buttons {
     display: flex;
     align-items: center;
@@ -390,9 +387,6 @@
     height: 18px;
   }
 
-  /* ==========================================================
-     📱 موبایل + تلویزیون (بهینه‌سازی برای دکمه‌های جهت‌دار)
-     ========================================================== */
   @media (max-width: 600px) {
     .info .description { font-size: 14px; }
     .play-btn { width: 60px; height: 60px; }
@@ -403,7 +397,6 @@
     .topbar { padding: 12px 14px; }
     .topbar .btn-back { font-size: 12px; padding: 6px 10px; }
     .topbar .film-title { font-size: 13px; max-width: 50%; }
-
     .controls {
       bottom: 20px;
       left: 12px;
@@ -419,20 +412,6 @@
     .controls .right-buttons .btn-ctrl svg { width: 16px; height: 16px; }
     .controls .progress-bar { height: 3px; }
     .controls .progress-bar:hover { height: 4px; }
-  }
-
-  /* ==========================================================
-     📺 تنظیمات ویژه برای تلویزیون (صفحات بزرگ و فول‌اسکرین)
-     ========================================================== */
-  @media (min-width: 1024px) and (orientation: landscape) {
-    .quality-selector select {
-      padding: 10px 20px;
-      font-size: 18px;
-      min-width: 120px;
-    }
-    .quality-selector label {
-      font-size: 18px;
-    }
   }
 </style>
 </head>
@@ -467,7 +446,7 @@
     <div class="description" id="description">در حال بارگذاری...</div>
   </div>
 
-  <!-- ===== منوی انتخاب کیفیت (دراپ‌داون استاندارد برای تلویزیون) ===== -->
+  <!-- ===== منوی انتخاب کیفیت (دراپ‌داون) ===== -->
   <div class="quality-selector" id="qualitySelector">
     <label for="qualitySelect">کیفیت:</label>
     <select id="qualitySelect">
@@ -485,7 +464,7 @@
   </div>
 
   <!-- ==========================================================
-       🎮 نوار کنترل
+       🎮 نوار کنترل (دقیقاً مثل قبل)
        ========================================================== -->
   <div class="controls" id="controls">
     <!-- ۱۰ ثانیه عقب -->
@@ -612,6 +591,7 @@ if (!token) {
 
 const params = new URLSearchParams(window.location.search);
 const id = params.get('id');
+const qualityParam = params.get('quality'); // خواندن کیفیت از URL
 
 const posterImage = document.getElementById('posterImage');
 const filmTitle = document.getElementById('filmTitle');
@@ -658,9 +638,8 @@ async function loadMovieInfo() {
       filmTitle.textContent = data.name.replace(/-/g, ' ');
       descriptionEl.textContent = data.description || 'بدون توضیحات';
       
-      // --- بخش جدید: پر کردن دراپ‌داون کیفیت ---
+      // --- بخش پر کردن دراپ‌داون کیفیت ---
       if (data.qualities && data.qualities.length > 0) {
-        // مرتب‌سازی کیفیت‌ها از زیاد به کم
         const sortedQualities = data.qualities.sort((a, b) => parseInt(b) - parseInt(a));
         
         qualitySelect.innerHTML = '';
@@ -671,8 +650,10 @@ async function loadMovieInfo() {
           qualitySelect.appendChild(option);
         });
 
-        // انتخاب بهترین کیفیت به صورت پیش‌فرض
-        if (data.bestQuality && sortedQualities.includes(data.bestQuality)) {
+        // اگر در URL کیفیت وجود داشت، آن را انتخاب کن
+        if (qualityParam && sortedQualities.includes(qualityParam)) {
+          qualitySelect.value = qualityParam;
+        } else if (data.bestQuality && sortedQualities.includes(data.bestQuality)) {
           qualitySelect.value = data.bestQuality;
         }
       } else {
@@ -718,41 +699,50 @@ async function loadPoster() {
 loadPoster();
 
 // ============================================================
-// 🎬 پخش فیلم (با در نظر گرفتن کیفیت انتخاب شده)
+// 🎬 آیا کیفیت در URL وجود دارد؟ اگر بله، مستقیم پخش کن!
+// ============================================================
+if (qualityParam) {
+  // اگر کاربر با کیفیت خاصی وارد صفحه شده، بلافاصله فیلم را پخش کن
+  setTimeout(() => {
+    // مخفی کردن المان‌های اضافی
+    document.querySelector('.poster-container').style.display = 'none';
+    document.querySelector('.overlay').style.display = 'none';
+    document.querySelector('.info').style.display = 'none';
+    document.querySelector('.quality-selector').style.display = 'none';
+    playBtn.style.display = 'none';
+    
+    video.classList.add('playing');
+    const streamUrl = `/api/stream/${encodeURIComponent(id)}?quality=${encodeURIComponent(qualityParam)}`;
+    console.log('🎬 شروع خودکار ویدیو با کیفیت:', qualityParam);
+    video.src = streamUrl;
+    video.load();
+    video.play().catch(err => {
+      console.error('❌ خطا در شروع خودکار پخش:', err);
+      loading.classList.remove('show');
+    });
+    loading.classList.add('show');
+  }, 500);
+}
+
+// ============================================================
+// 🎬 دکمه پخش وسط صفحه (تغییر URL و رفرش بدون تغییر نوار کنترل)
 // ============================================================
 playBtn.addEventListener('click', () => {
   const selectedQuality = qualitySelect.value;
 
-  // اگر کیفیتی انتخاب نشده و لیست خالی است، از کیفیت پیش‌فرض استفاده کن
   if (!selectedQuality || selectedQuality === 'کیفیتی موجود نیست') {
-    // به جای متوقف کردن، با کیفیت پیش‌فرض (مثلاً 720p) ادامه میدهیم
-    console.warn('⚠️ کیفیتی انتخاب نشده، استفاده از پیش‌فرض سرور');
+    alert('لطفاً یک کیفیت معتبر انتخاب کنید.');
+    return;
   }
 
-  document.querySelector('.poster-container').style.display = 'none';
-  document.querySelector('.overlay').style.display = 'none';
-  document.querySelector('.info').style.display = 'none';
-  document.querySelector('.quality-selector').style.display = 'none'; // مخفی کردن دراپ‌داون
-  playBtn.style.display = 'none';
-  
-  video.classList.add('playing');
-  
-  // --- تغییر: اضافه کردن پارامتر quality به آدرس استریم ---
-  let streamUrl = `/api/stream/${encodeURIComponent(id)}`;
-  if (selectedQuality && selectedQuality !== 'کیفیتی موجود نیست') {
-    streamUrl += `?quality=${encodeURIComponent(selectedQuality)}`;
-  }
-  video.src = streamUrl;
-  // --- پایان تغییر ---
-  
-  video.load();
-  video.play();
-  
-  loading.classList.add('show');
+  // تغییر URL مرورگر و اضافه کردن کیفیت به آن
+  const newUrl = `/watch.html?id=${encodeURIComponent(id)}&quality=${encodeURIComponent(selectedQuality)}`;
+  console.log('🔄 تغییر مسیر به:', newUrl);
+  window.location.href = newUrl;
 });
 
 // ============================================================
-// 🎮 کنترل‌های ویدیو
+// 🎮 کنترل‌های ویدیو (دقیقاً مثل قبل)
 // ============================================================
 video.addEventListener('loadeddata', () => {
   loading.classList.remove('show');
@@ -778,16 +768,14 @@ video.addEventListener('waiting', () => {
   loading.classList.add('show');
 });
 
-// ============================================================
-// 🎯 دکمه‌های کنترل
-// ============================================================
+video.addEventListener('error', (e) => {
+  console.error('❌ خطای ویدیو:', video.error);
+  loading.classList.remove('show');
+});
 
 btnPlayPause.addEventListener('click', () => {
-  if (video.paused) {
-    video.play();
-  } else {
-    video.pause();
-  }
+  if (video.paused) video.play();
+  else video.pause();
 });
 
 btnSkipBack.addEventListener('click', () => {
@@ -810,11 +798,8 @@ btnMute.addEventListener('click', () => {
 });
 
 btnFullscreen.addEventListener('click', () => {
-  if (document.fullscreenElement) {
-    document.exitFullscreen();
-  } else {
-    document.body.requestFullscreen?.();
-  }
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.body.requestFullscreen?.();
 });
 
 document.addEventListener('fullscreenchange', () => {
@@ -831,9 +816,6 @@ progressBar.addEventListener('click', (e) => {
   video.currentTime = x * video.duration;
 });
 
-// ============================================================
-// ⏱️ تبدیل زمان
-// ============================================================
 function formatTime(seconds) {
   if (isNaN(seconds) || seconds < 0) return '00:00';
   const m = Math.floor(seconds / 60);
@@ -841,34 +823,14 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-// ============================================================
-// ⌨️ کیبورد
-// ============================================================
 document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  
   switch(e.key) {
-    case ' ':
-      e.preventDefault();
-      if (video.paused) video.play();
-      else video.pause();
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      video.currentTime = Math.min(video.duration, video.currentTime + 10);
-      break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      video.currentTime = Math.max(0, video.currentTime - 10);
-      break;
-    case 'f':
-    case 'F':
-      btnFullscreen.click();
-      break;
-    case 'm':
-    case 'M':
-      btnMute.click();
-      break;
+    case ' ': e.preventDefault(); if (video.paused) video.play(); else video.pause(); break;
+    case 'ArrowRight': e.preventDefault(); video.currentTime = Math.min(video.duration, video.currentTime + 10); break;
+    case 'ArrowLeft': e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 10); break;
+    case 'f': case 'F': btnFullscreen.click(); break;
+    case 'm': case 'M': btnMute.click(); break;
   }
 });
 
