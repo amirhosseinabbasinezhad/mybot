@@ -21,9 +21,6 @@ module.exports = async (req, res) => {
   console.log("[bot] 📩 دریافت شد");
   if (callback) console.log("[bot] 📞 Callback:", callback.data);
 
-  // ============================================================
-  // 📞 مدیریت Callback
-  // ============================================================
   if (callback) {
     const data = callback.data;
     const chatId = callback.message.chat.id;
@@ -38,7 +35,7 @@ module.exports = async (req, res) => {
 
     const db = await getDb();
 
-    // ===== دکمه برگشت به منو =====
+    // ===== برگشت به منو =====
     if (data === 'back_to_menu') {
       const keyboard = {
         inline_keyboard: [
@@ -70,7 +67,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== دکمه "افزودن فیلم" =====
+    // ===== افزودن فیلم =====
     if (data === 'start_new_movie') {
       await db.collection("pending_movies").deleteMany({ userId: fromId });
 
@@ -79,6 +76,7 @@ module.exports = async (req, res) => {
         status: 'waiting_for_movie_name',
         createdAt: new Date(),
         qualities: {},
+        currentQuality: null,
       });
 
       const keyboard = {
@@ -98,7 +96,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== دکمه "افزودن متن" =====
+    // ===== افزودن متن =====
     if (data === 'start_new_text') {
       const keyboard = {
         inline_keyboard: [
@@ -116,7 +114,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== دکمه "همه کیفیت‌ها رو فرستادم" =====
+    // ===== همه کیفیت‌ها رو فرستادم =====
     if (data === 'all_qualities_sent') {
       const pending = await db.collection("pending_movies").findOne({
         userId: fromId,
@@ -129,7 +127,6 @@ module.exports = async (req, res) => {
         return;
       }
 
-      // چک کردن اینکه حداقل یک کیفیت ارسال شده
       const sentQualities = pending.qualities || {};
       const sentList = Object.keys(sentQualities);
 
@@ -139,7 +136,6 @@ module.exports = async (req, res) => {
         return;
       }
 
-      // ذخیره نهایی فیلم
       await db.collection("movies").insertOne({
         name: pending.movieName,
         channelUsername: CHANNEL_USERNAME,
@@ -159,7 +155,6 @@ module.exports = async (req, res) => {
         ]
       };
 
-      // ساخت لیست کیفیت‌های ارسال شده
       const qualityNames = {
         '360': '۳۶۰p',
         '480': '۴۸۰p',
@@ -171,7 +166,7 @@ module.exports = async (req, res) => {
       await sendMessage(BOT_TOKEN, chatId, 
         `✅ فیلم با موفقیت ذخیره شد!\n\n` +
         `🎬 ${pending.movieName}\n` +
-        `📺 کیفیت‌های ارسال شده: ${qualityList}\n` +
+        `📺 کیفیت‌ها: ${qualityList}\n` +
         `🔗 لینک: ${link}`,
         keyboard
       );
@@ -180,7 +175,7 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== دکمه‌های کیفیت =====
+    // ===== انتخاب کیفیت =====
     if (data.startsWith('quality_')) {
       const quality = data.replace('quality_', '');
       const qualityMap = {
@@ -222,8 +217,7 @@ module.exports = async (req, res) => {
 
       await sendMessage(BOT_TOKEN, chatId, 
         `📤 لطفاً فایل ${qualityMap[quality]} رو بفرست.\n\n` +
-        `(فایل ویدیویی با کیفیت ${quality}p)\n\n` +
-        `💡 بعد از ارسال همه کیفیت‌ها، دکمه "همه کیفیت‌ها رو فرستادم" رو بزن.`,
+        `(فایل ویدیویی با کیفیت ${quality}p)`,
         keyboard
       );
 
@@ -260,7 +254,7 @@ module.exports = async (req, res) => {
   const db = await getDb();
 
   // ============================================================
-  // 🏠 دستور /start
+  // 🏠 /start
   // ============================================================
   if (text === '/start') {
     const keyboard = {
@@ -283,7 +277,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 📝 مدیریت متن
+  // 📝 متن (اسم فیلم یا متن)
   // ============================================================
   if (text && !text.startsWith('/') && !hasFile && !hasPhoto) {
     const pending = await db.collection("pending_movies").findOne({
@@ -361,7 +355,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 🖼️ دریافت پوستر
+  // 🖼️ پوستر
   // ============================================================
   if (hasPhoto) {
     const pending = await db.collection("pending_movies").findOne({
@@ -417,7 +411,8 @@ module.exports = async (req, res) => {
           `🎬 فیلم: ${pending.movieName}\n\n` +
           `📤 حالا کیفیت‌های مختلف فیلم رو بفرست.\n` +
           `⚠️ لازم نیست همه کیفیت‌ها رو بفرستی، هر کدوم رو داری بفرست.\n\n` +
-          `بعد از ارسال کیفیت‌ها، دکمه "همه کیفیت‌ها رو فرستادم" رو بزن.`,
+          `📌 ترتیب کیفیت‌ها رو رعایت کن:\n` +
+          `۳۶۰ ← ۴۸۰ ← ۷۲۰ ← ۱۰۸۰`,
           keyboard
         );
 
@@ -432,7 +427,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 🎬 دریافت فایل (کیفیت)
+  // 🎬 دریافت فایل (کیفیت) - خودکار به کیفیت بعدی میره
   // ============================================================
   if (hasFile) {
     const pending = await db.collection("pending_movies").findOne({
@@ -476,25 +471,37 @@ module.exports = async (req, res) => {
           { $set: updateQuery }
         );
 
+        // ===== خودکار به کیفیت بعدی برو =====
         const qualities = ['360', '480', '720', '1080'];
         const currentIndex = qualities.indexOf(quality);
         const nextQuality = qualities[currentIndex + 1];
 
-        // دکمه تایید نهایی + کیفیت‌های بعدی
-        const keyboardButtons = [];
+        let keyboardButtons = [];
 
-        // اضافه کردن دکمه کیفیت بعدی (اگه وجود داره)
         if (nextQuality) {
+          // کیفیت بعدی رو تنظیم کن
+          await db.collection("pending_movies").updateOne(
+            { _id: pending._id },
+            { $set: { currentQuality: nextQuality } }
+          );
+
           const nextMap = {
             '360': 'کیفیت ۳۶۰',
             '480': 'کیفیت ۴۸۰',
             '720': 'کیفیت ۷۲۰',
             '1080': 'کیفیت ۱۰۸۰'
           };
+
           keyboardButtons.push([{ text: `📺 ${nextMap[nextQuality]}`, callback_data: `quality_${nextQuality}` }]);
+        } else {
+          // همه کیفیت‌ها تموم شد
+          await db.collection("pending_movies").updateOne(
+            { _id: pending._id },
+            { $set: { currentQuality: null } }
+          );
         }
 
-        // دکمه تایید نهایی
+        // دکمه تایید نهایی همیشه هست
         keyboardButtons.push([{ text: '✅ همه کیفیت‌ها رو فرستادم', callback_data: 'all_qualities_sent' }]);
         keyboardButtons.push([{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]);
 
@@ -502,7 +509,6 @@ module.exports = async (req, res) => {
           inline_keyboard: keyboardButtons
         };
 
-        // ساخت لیست کیفیت‌های ارسال شده
         const sentQualities = pending.qualities || {};
         const sentList = Object.keys(sentQualities);
         const qualityNames = {
@@ -513,10 +519,21 @@ module.exports = async (req, res) => {
         };
         const sentText = sentList.length > 0 ? `\n📺 ارسال شده: ${sentList.map(q => qualityNames[q] || q).join(', ')}` : '';
 
+        let nextText = '';
+        if (nextQuality) {
+          const nextMap = {
+            '360': 'کیفیت ۳۶۰',
+            '480': 'کیفیت ۴۸۰',
+            '720': 'کیفیت ۷۲۰',
+            '1080': 'کیفیت ۱۰۸۰'
+          };
+          nextText = `\n📤 حالا ${nextMap[nextQuality]} رو بفرست (اختیاری).`;
+        } else {
+          nextText = '\n✅ همه کیفیت‌ها ارسال شد! دکمه تایید رو بزن.';
+        }
+
         await sendMessage(BOT_TOKEN, chatId, 
-          `✅ ${qualityMap[quality]} با موفقیت ذخیره شد!${sentText}\n\n` +
-          (nextQuality ? `📤 حالا ${qualityMap[nextQuality]} رو بفرست (اختیاری).\n` : '') +
-          `🟢 وقتی همه کیفیت‌ها رو فرستادی، دکمه پایین رو بزن.`,
+          `✅ ${qualityMap[quality]} با موفقیت ذخیره شد!${sentText}${nextText}`,
           keyboard
         );
 
@@ -531,7 +548,7 @@ module.exports = async (req, res) => {
   }
 
   // ============================================================
-  // 🎬 اگر هیچکدام از حالت‌ها نبود
+  // 🎬 حالت پیش‌فرض
   // ============================================================
   const keyboard = {
     inline_keyboard: [
