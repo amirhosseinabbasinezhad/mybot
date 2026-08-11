@@ -270,6 +270,9 @@
   /* ==========================================================
      🎮 نوار کنترل (دقیقاً مثل قبل، بدون تغییر)
      ========================================================== */
+  /* ==========================================================
+   🎮 نوار کنترل (ظاهر شیشه‌ای و باریک)
+   ========================================================== */
   .controls {
     position: absolute;
     bottom: 30px;
@@ -278,13 +281,14 @@
     z-index: 6;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     direction: ltr;
-    background: rgba(0,0,0,0.6);
+    background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(16px);
-    padding: 10px 16px;
+    -webkit-backdrop-filter: blur(16px);
+    padding: 8px 14px;
     border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     transition: opacity 0.3s ease;
   }
 
@@ -299,13 +303,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 32px;
-    min-height: 32px;
+    min-width: 30px;
+    min-height: 30px;
     flex-shrink: 0;
   }
 
   .controls .btn-ctrl:hover {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.08);
   }
 
   .controls .btn-ctrl:active {
@@ -313,42 +317,42 @@
   }
 
   .controls .btn-ctrl svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     fill: white;
   }
 
   .controls .btn-play-big {
-    background: rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 50%;
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
     padding: 0;
-    min-width: 38px;
-    min-height: 38px;
+    min-width: 34px;
+    min-height: 34px;
   }
 
   .controls .btn-play-big:hover {
-    background: rgba(255,255,255,0.15);
+    background: rgba(255, 255, 255, 0.15);
   }
 
   .controls .btn-play-big svg {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
   }
 
   .controls .progress-wrapper {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
   }
 
   .controls .time {
     font-size: 11px;
     color: #aaa;
-    min-width: 38px;
+    min-width: 36px;
     font-variant-numeric: tabular-nums;
     flex-shrink: 0;
   }
@@ -356,7 +360,7 @@
   .controls .progress-bar {
     flex: 1;
     height: 4px;
-    background: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
     position: relative;
     cursor: pointer;
@@ -365,7 +369,7 @@
   }
 
   .controls .progress-bar:hover {
-    height: 6px;
+    height: 5px;
   }
 
   .controls .progress-fill {
@@ -383,10 +387,96 @@
   }
 
   .controls .right-buttons .btn-ctrl svg {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
   }
 
+  .controls.idle {
+    opacity: 0.2;
+  }
+
+  /* ==========================================================
+     📱 موبایل
+     ========================================================== */
+  @media (max-width: 600px) {
+    .controls {
+      bottom: 60px;
+      left: 12px;
+      right: 12px;
+      padding: 6px 10px;
+      gap: 6px;
+      border-radius: 12px;
+    }
+
+    .controls .btn-ctrl {
+      min-width: 24px;
+      min-height: 24px;
+      padding: 3px 4px;
+    }
+
+    .controls .btn-ctrl svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    .controls .btn-play-big {
+      width: 28px;
+      height: 28px;
+      min-width: 28px;
+      min-height: 28px;
+    }
+
+    .controls .btn-play-big svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .controls .time {
+      font-size: 10px;
+      min-width: 30px;
+    }
+
+    .controls .right-buttons .btn-ctrl svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .controls .progress-bar {
+      height: 3px;
+    }
+  }
+
+  @media (min-width: 601px) {
+    .controls {
+      bottom: 20px;
+      padding: 6px 14px;
+      gap: 8px;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .controls {
+      padding: 8px 20px;
+      gap: 10px;
+    }
+
+    .controls .btn-ctrl svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .controls .btn-play-big {
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      min-height: 38px;
+    }
+
+    .controls .btn-play-big svg {
+      width: 22px;
+      height: 22px;
+    }
+  }
   @media (max-width: 600px) {
     .info .description { font-size: 14px; }
     .play-btn { width: 60px; height: 60px; }
