@@ -25,7 +25,6 @@
     overflow: hidden;
   }
 
-  /* ===== نوار بالایی ===== */
   .topbar {
     position: absolute;
     top: 0;
@@ -42,9 +41,7 @@
     transition: opacity 0.4s ease;
   }
 
-  .topbar * {
-    pointer-events: auto;
-  }
+  .topbar * { pointer-events: auto; }
 
   .topbar .btn-back {
     display: flex;
@@ -110,6 +107,7 @@
     transform: scale(1);
   }
 
+  /* ===== پس‌زمینه محو (همیشه وجود داره، تا وقتی فیلم شروع نشده) ===== */
   .overlay {
     position: absolute;
     top: 0;
@@ -120,6 +118,7 @@
     z-index: 2;
   }
 
+  /* ===== اطلاعات فیلم ===== */
   .info {
     position: absolute;
     bottom: 160px;
@@ -144,7 +143,7 @@
     overflow: hidden;
   }
 
-  /* ===== منوی انتخاب کیفیت (دراپ‌داون) ===== */
+  /* ===== منوی انتخاب کیفیت ===== */
   .quality-selector {
     position: absolute;
     bottom: 200px;
@@ -234,6 +233,12 @@
     background: #000;
     z-index: 4;
     display: block;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+
+  #player.show {
+    opacity: 1;
   }
 
   /* ===== بارگذاری ===== */
@@ -267,9 +272,7 @@
     to { transform: rotate(360deg); }
   }
 
-  /* ==========================================================
-     🎮 نوار کنترل (100% عرض افقی)
-     ========================================================== */
+  /* ===== نوار کنترل ===== */
   .controls {
     position: absolute;
     bottom: 30px;
@@ -387,8 +390,12 @@
     height: 16px;
   }
 
+  .controls.idle {
+    opacity: 0.2;
+  }
+
   /* ==========================================================
-     📱 موبایل: 60px از پایین
+     📱 موبایل
      ========================================================== */
   @media (max-width: 600px) {
     .info .description { font-size: 14px; }
@@ -418,35 +425,15 @@
     .controls .progress-bar { height: 3px; }
   }
 
-  /* ==========================================================
-     🖥️ تلویزیون/دسکتاپ: چسبیده به پایین
-     ========================================================== */
   @media (min-width: 601px) {
-    .controls {
-      bottom: 20px;
-      padding: 6px 14px;
-      gap: 8px;
-    }
+    .controls { bottom: 20px; padding: 6px 14px; gap: 8px; }
   }
 
-  /* ==========================================================
-     🖥️ تلویزیون بزرگ
-     ========================================================== */
   @media (min-width: 1200px) {
-    .controls {
-      padding: 8px 20px;
-      gap: 10px;
-    }
+    .controls { padding: 8px 20px; gap: 10px; }
     .controls .btn-ctrl svg { width: 20px; height: 20px; }
     .controls .btn-play-big { width: 38px; height: 38px; min-width: 38px; min-height: 38px; }
     .controls .btn-play-big svg { width: 22px; height: 22px; }
-  }
-
-  /* ==========================================================
-     کمرنگ شدن نوار وقتی کاریش نداریم
-     ========================================================== */
-  .controls.idle {
-    opacity: 0.2;
   }
 </style>
 </head>
@@ -454,7 +441,7 @@
 
 <div class="container" id="container">
   
-  <!-- ===== نوار بالایی ===== -->
+  <!-- نوار بالایی -->
   <div class="topbar" id="topbar">
     <a href="/movies.html" class="btn-back">
       <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
@@ -463,24 +450,24 @@
     <span class="film-title" id="filmTitle">در حال بارگذاری...</span>
   </div>
 
-  <!-- ===== پوستر ===== -->
+  <!-- پوستر -->
   <div class="poster-container" id="posterContainer">
     <img id="posterImage" src="" alt="پوستر فیلم" />
   </div>
 
-  <div class="overlay"></div>
+  <div class="overlay" id="overlay"></div>
 
-  <!-- ===== دکمه پخش وسط ===== -->
+  <!-- دکمه پخش وسط -->
   <button class="play-btn" id="playBtn">
     <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
   </button>
 
-  <!-- ===== اطلاعات فیلم ===== -->
+  <!-- اطلاعات فیلم -->
   <div class="info" id="info">
     <div class="description" id="description">در حال دریافت اطلاعات فیلم...</div>
   </div>
 
-  <!-- ===== منوی انتخاب کیفیت (دراپ‌داون) ===== -->
+  <!-- منوی انتخاب کیفیت -->
   <div class="quality-selector" id="qualitySelector">
     <label for="qualitySelect">کیفیت:</label>
     <select id="qualitySelect">
@@ -488,41 +475,29 @@
     </select>
   </div>
 
-  <!-- ===== ویدیو ===== -->
+  <!-- ویدیو -->
   <video id="player" playsinline crossorigin="anonymous"></video>
 
-  <!-- ===== بارگذاری ===== -->
+  <!-- بارگذاری -->
   <div class="loading" id="loading">
     <div class="spinner"></div>
     <div>در حال بارگذاری فیلم...</div>
   </div>
 
-  <!-- ==========================================================
-     🎮 نوار کنترل (100% عرض افقی)
-     ========================================================== -->
+  <!-- نوار کنترل -->
   <div class="controls" id="controls">
-    <!-- ۱۰ ثانیه عقب -->
     <button class="btn-ctrl" id="btnSkipBack" title="۱۰ ثانیه عقب">
-      <svg viewBox="0 0 24 24">
-        <path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/>
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z"/></svg>
     </button>
 
-    <!-- پخش/توقف -->
     <button class="btn-ctrl btn-play-big" id="btnPlayPause" title="پخش/توقف">
-      <svg viewBox="0 0 24 24" id="playPauseIcon">
-        <path d="M8 5v14l11-7z"/>
-      </svg>
+      <svg viewBox="0 0 24 24" id="playPauseIcon"><path d="M8 5v14l11-7z"/></svg>
     </button>
 
-    <!-- ۱۰ ثانیه جلو -->
     <button class="btn-ctrl" id="btnSkipForward" title="۱۰ ثانیه جلو">
-      <svg viewBox="0 0 24 24">
-        <path d="M13 18V6l8.5 6-8.5 6zm-.5-6l-8.5-6v12l8.5-6z"/>
-      </svg>
+      <svg viewBox="0 0 24 24"><path d="M13 18V6l8.5 6-8.5 6zm-.5-6l-8.5-6v12l8.5-6z"/></svg>
     </button>
 
-    <!-- ===== نوار پیشرفت + زمان ===== -->
     <div class="progress-wrapper">
       <span class="time" id="timeCurrent">00:00</span>
       <div class="progress-bar" id="progressBar">
@@ -531,20 +506,13 @@
       <span class="time" id="timeDuration">00:00</span>
     </div>
 
-    <!-- ===== دکمه‌های سمت راست ===== -->
     <div class="right-buttons">
-      <!-- صدا -->
       <button class="btn-ctrl" id="btnMute" title="قطع/وصل صدا">
-        <svg viewBox="0 0 24 24" id="muteIcon">
-          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-        </svg>
+        <svg viewBox="0 0 24 24" id="muteIcon"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
       </button>
 
-      <!-- تمام صفحه -->
       <button class="btn-ctrl" id="btnFullscreen" title="تمام صفحه">
-        <svg viewBox="0 0 24 24" id="fullscreenIcon">
-          <path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/>
-        </svg>
+        <svg viewBox="0 0 24 24" id="fullscreenIcon"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
       </button>
     </div>
   </div>
@@ -630,6 +598,10 @@ const qualityParam = params.get('quality');
 console.log('🎬 فیلم:', id, '| کیفیت:', qualityParam);
 
 const posterImage = document.getElementById('posterImage');
+const posterContainer = document.getElementById('posterContainer');
+const overlay = document.getElementById('overlay');
+const info = document.getElementById('info');
+const qualitySelector = document.getElementById('qualitySelector');
 const filmTitle = document.getElementById('filmTitle');
 const descriptionEl = document.getElementById('description');
 const playBtn = document.getElementById('playBtn');
@@ -674,7 +646,7 @@ async function loadMovieInfo() {
       filmTitle.textContent = data.name.replace(/-/g, ' ');
       descriptionEl.textContent = data.description || 'بدون توضیحات';
       
-      // --- بخش پر کردن دراپ‌داون کیفیت ---
+      // پر کردن دراپ‌داون کیفیت
       if (data.qualities && Object.keys(data.qualities).length > 0) {
         const qualityKeys = Object.keys(data.qualities).sort((a, b) => parseInt(b) - parseInt(a));
         
@@ -686,13 +658,9 @@ async function loadMovieInfo() {
           qualitySelect.appendChild(option);
         });
 
-        // اگر در URL کیفیت وجود داشت، آن را انتخاب کن
         if (qualityParam && qualityKeys.includes(qualityParam)) {
           qualitySelect.value = qualityParam;
         }
-        
-        // نمایش کیفیت‌ها در توضیحات
-        descriptionEl.textContent += `\n📺 کیفیت‌ها: ${qualityKeys.map(q => q + 'p').join(', ')}`;
       } else {
         qualitySelect.innerHTML = '<option value="">کیفیتی موجود نیست</option>';
       }
@@ -739,14 +707,14 @@ loadPoster();
 // ============================================================
 
 function startPlayback(selectedQuality) {
-  // مخفی کردن پوستر، دکمه پخش، اطلاعات و انتخاب کیفیت
-  document.querySelector('.poster-container').style.display = 'none';
-  document.querySelector('.overlay').style.display = 'none';
-  document.querySelector('.info').style.display = 'none';
-  document.querySelector('.quality-selector').style.display = 'none';
+  // مخفی کردن پوستر و المان‌های اضافی
+  posterContainer.style.display = 'none';
+  overlay.style.display = 'none';
+  info.style.display = 'none';
+  qualitySelector.style.display = 'none';
   playBtn.classList.add('hidden');
   
-  video.classList.add('playing');
+  video.classList.add('show');
   
   let streamUrl = `/api/stream/${encodeURIComponent(id)}`;
   if (selectedQuality && selectedQuality !== '') {
@@ -818,11 +786,8 @@ video.addEventListener('canplay', () => {
 // ============================================================
 
 btnPlayPause.addEventListener('click', () => {
-  if (video.paused) {
-    video.play();
-  } else {
-    video.pause();
-  }
+  if (video.paused) video.play();
+  else video.pause();
 });
 
 btnSkipBack.addEventListener('click', () => {
@@ -889,10 +854,6 @@ function showControls() {
   }, 3000);
 }
 
-function hideControls() {
-  controls.classList.add('idle');
-}
-
 document.addEventListener('mousemove', showControls);
 document.addEventListener('touchstart', showControls);
 
@@ -905,27 +866,11 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   
   switch(e.key) {
-    case ' ':
-      e.preventDefault();
-      if (video.paused) video.play();
-      else video.pause();
-      break;
-    case 'ArrowRight':
-      e.preventDefault();
-      video.currentTime = Math.min(video.duration, video.currentTime + 10);
-      break;
-    case 'ArrowLeft':
-      e.preventDefault();
-      video.currentTime = Math.max(0, video.currentTime - 10);
-      break;
-    case 'f':
-    case 'F':
-      btnFullscreen.click();
-      break;
-    case 'm':
-    case 'M':
-      btnMute.click();
-      break;
+    case ' ': e.preventDefault(); if (video.paused) video.play(); else video.pause(); break;
+    case 'ArrowRight': e.preventDefault(); video.currentTime = Math.min(video.duration, video.currentTime + 10); break;
+    case 'ArrowLeft': e.preventDefault(); video.currentTime = Math.max(0, video.currentTime - 10); break;
+    case 'f': case 'F': btnFullscreen.click(); break;
+    case 'm': case 'M': btnMute.click(); break;
   }
 });
 
