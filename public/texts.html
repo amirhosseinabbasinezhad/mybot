@@ -643,6 +643,84 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ============================================================
+// 🔐 بررسی احراز هویت اولیه
+// ============================================================
+const username = localStorage.getItem('username');
+if (!localStorage.getItem('accessToken')) {
+  window.location.href = '/login.html';
+}
+
+// نمایش نام کاربری
+if (username) {
+  document.getElementById('usernameDisplay').textContent = username;
+  document.getElementById('dropdownUsername').textContent = username;
+}
+
+// ============================================================
+// 🔄 مدیریت تمدید توکن (اضافه شد)
+// ============================================================
+async function refreshAccessToken() {
+  const refreshToken = localStorage.getItem('refreshToken');
+  if (!refreshToken) {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('username');
+    window.location.href = '/login.html';
+    return null;
+  }
+
+  try {
+    const response = await fetch('/api/auth?action=refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      console.error('❌ خطا در تمدید توکن:', data.error);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('username');
+      window.location.href = '/login.html';
+      return null;
+    }
+
+    const data = await response.json();
+    localStorage.setItem('accessToken', data.accessToken);
+    return data.accessToken;
+  } catch (err) {
+    console.error('❌ خطای شبکه در تمدید توکن:', err);
+    return null;
+  }
+}
+
+async function fetchWithAuth(url, options = {}) {
+  let accessToken = localStorage.getItem('accessToken');
+  if (!accessToken) {
+    window.location.href = '/login.html';
+    return;
+  }
+
+  options.headers = {
+    ...options.headers,
+    'Authorization': `Bearer ${accessToken}`
+  };
+
+  let response = await fetch(url, options);
+
+  if (response.status === 401) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      options.headers['Authorization'] = `Bearer ${newToken}`;
+      response = await fetch(url, options);
+    }
+  }
+
+  return response;
+}
+
 const API_URL = '/api/texts';
 const textList = document.getElementById('textList');
 const inputText = document.getElementById('inputText');
@@ -656,7 +734,7 @@ const modalCloseBtn = document.getElementById('modalCloseBtn');
 const modalCloseFooter = document.getElementById('modalCloseFooter');
 
 // ============================================================
-// 👤 منوی کاربری (بخش اضافه شده که در فایل قبلی نبود)
+// 👤 منوی کاربری
 // ============================================================
 const userMenuBtn = document.getElementById('userMenuBtn');
 const userDropdown = document.getElementById('userDropdown');
@@ -671,7 +749,7 @@ document.addEventListener('click', () => {
 });
 
 // ============================================================
-// 🚪 خروج (بخش اضافه شده)
+// 🚪 خروج
 // ============================================================
 document.getElementById('logoutBtn').addEventListener('click', async () => {
   const username = localStorage.getItem('username');
@@ -694,13 +772,6 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   window.location.href = '/login.html';
 });
 
-// نمایش نام کاربری
-const username = localStorage.getItem('username');
-if (username) {
-  document.getElementById('usernameDisplay').textContent = username;
-  document.getElementById('dropdownUsername').textContent = username;
-}
-
 // ============================================================
 // ادامه کدهای مدیریت متن‌ها
 // ============================================================
@@ -719,7 +790,9 @@ function showToast(message, type = 'success') {
 
 async function loadTexts() {
   try {
-    const response = await fetch(API_URL);
+    // استفاده از fetchWithAuth
+    const response = await fetchWithAuth(API_URL);
+    if (!response) return;
     if (!response.ok) throw new Error('خطا در دریافت متن‌ها');
     allTexts = await response.json();
     renderTexts();
@@ -824,12 +897,12 @@ async function addText() {
   btnAdd.textContent = '⏳';
 
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetchWithAuth(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),
     });
-
+    if (!response) return;
     if (!response.ok) throw new Error('خطا در افزودن متن');
 
     const result = await response.json();
@@ -862,12 +935,13 @@ function editText(id) {
     return;
   }
 
-  fetch(API_URL, {
+  fetchWithAuth(API_URL, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ id, text: newText.trim() }),
   })
     .then(res => {
+      if (!res) return;
       if (!res.ok) throw new Error('خطا در ویرایش');
       return res.json();
     })
@@ -902,10 +976,11 @@ function copyText(id) {
 function deleteText(id) {
   if (!confirm('آیا مطمئن هستید؟')) return;
 
-  fetch(`${API_URL}?id=${id}`, {
+  fetchWithAuth(`${API_URL}?id=${id}`, {
     method: 'DELETE',
   })
     .then(res => {
+      if (!res) return;
       if (!res.ok) throw new Error('خطا در حذف');
       return res.json();
     })

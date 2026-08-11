@@ -101,7 +101,8 @@ module.exports = async (req, res) => {
 
       // بررسی اینکه Refresh Token با چیزی که ذخیره کردیم یکی باشه
       if (refreshTokens[username] !== refreshToken) {
-        return res.status(401).json({ error: "Refresh Token نامعتبر است" });
+        console.warn(`[auth] ⚠️ تلاش برای استفاده از رفرش توکن قدیمی یا نامعتبر برای کاربر ${username}`);
+        return res.status(401).json({ error: "Refresh Token نامعتبر است (احتمالاً قبلاً لاگ‌اوت کرده‌اید)" });
       }
 
       // 🔥 تولید Access Token جدید (۱۵ دقیقه)

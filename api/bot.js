@@ -35,7 +35,6 @@ module.exports = async (req, res) => {
 
     const db = await getDb();
 
-    // ===== برگشت به منو =====
     if (data === 'back_to_menu') {
       const keyboard = {
         inline_keyboard: [
@@ -67,7 +66,6 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== افزودن فیلم =====
     if (data === 'start_new_movie') {
       await db.collection("pending_movies").deleteMany({ userId: fromId });
 
@@ -96,7 +94,6 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ===== افزودن متن =====
     if (data === 'start_new_text') {
       const keyboard = {
         inline_keyboard: [
@@ -136,6 +133,7 @@ module.exports = async (req, res) => {
         return;
       }
 
+      // ذخیره در دیتابیس
       await db.collection("movies").insertOne({
         name: pending.movieName,
         channelUsername: CHANNEL_USERNAME,
@@ -149,27 +147,47 @@ module.exports = async (req, res) => {
 
       const link = `${BASE_URL}/watch.html?id=${encodeURIComponent(pending.movieName)}`;
       
-      const keyboard = {
-        inline_keyboard: [
-          [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
-        ]
-      };
-
+      // ============================================================
+      // 🔗 ساخت لینک همه کیفیت‌ها
+      // ============================================================
       const qualityNames = {
         '360': '۳۶۰p',
         '480': '۴۸۰p',
         '720': '۷۲۰p',
         '1080': '۱۰۸۰p'
       };
-      const qualityList = sentList.map(q => qualityNames[q] || q).join(', ');
 
-      await sendMessage(BOT_TOKEN, chatId, 
-        `✅ فیلم با موفقیت ذخیره شد!\n\n` +
-        `🎬 ${pending.movieName}\n` +
-        `📺 کیفیت‌ها: ${qualityList}\n` +
-        `🔗 لینک: ${link}`,
-        keyboard
-      );
+      // لینک پخش اصلی
+      let qualityLinks = `🎬 **${pending.movieName}**\n\n`;
+      qualityLinks += `🔗 **لینک پخش**:\n${link}\n\n`;
+      qualityLinks += `📺 **کیفیت‌های موجود**:\n`;
+
+      // لینک مستقیم هر کیفیت
+      const sortedQualities = ['360', '480', '720', '1080'];
+      let hasAnyQuality = false;
+      
+      for (const q of sortedQualities) {
+        if (sentQualities[q]) {
+          hasAnyQuality = true;
+          const qualityLink = `${BASE_URL}/watch.html?id=${encodeURIComponent(pending.movieName)}&quality=${q}`;
+          qualityLinks += `▫️ **${qualityNames[q]}**: ${qualityLink}\n`;
+        }
+      }
+
+      if (!hasAnyQuality) {
+        qualityLinks += `❌ هیچ کیفیتی موجود نیست\n`;
+      }
+
+      qualityLinks += `\n📌 **نکته**: برای پخش، روی لینک کلیک کن.`;
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]
+        ]
+      };
+
+      // ارسال پیام با لینک همه کیفیت‌ها
+      await sendMessage(BOT_TOKEN, chatId, qualityLinks, keyboard);
 
       res.status(200).json({ ok: true });
       return;
@@ -471,7 +489,7 @@ module.exports = async (req, res) => {
           { $set: updateQuery }
         );
 
-        // ===== خودکار به کیفیت بعدی برو =====
+        // خودکار به کیفیت بعدی برو
         const qualities = ['360', '480', '720', '1080'];
         const currentIndex = qualities.indexOf(quality);
         const nextQuality = qualities[currentIndex + 1];
@@ -479,7 +497,6 @@ module.exports = async (req, res) => {
         let keyboardButtons = [];
 
         if (nextQuality) {
-          // کیفیت بعدی رو تنظیم کن
           await db.collection("pending_movies").updateOne(
             { _id: pending._id },
             { $set: { currentQuality: nextQuality } }
@@ -494,14 +511,12 @@ module.exports = async (req, res) => {
 
           keyboardButtons.push([{ text: `📺 ${nextMap[nextQuality]}`, callback_data: `quality_${nextQuality}` }]);
         } else {
-          // همه کیفیت‌ها تموم شد
           await db.collection("pending_movies").updateOne(
             { _id: pending._id },
             { $set: { currentQuality: null } }
           );
         }
 
-        // دکمه تایید نهایی همیشه هست
         keyboardButtons.push([{ text: '✅ همه کیفیت‌ها رو فرستادم', callback_data: 'all_qualities_sent' }]);
         keyboardButtons.push([{ text: '🔙 برگشت به منو', callback_data: 'back_to_menu' }]);
 
