@@ -80,20 +80,6 @@
     letter-spacing: -0.01em;
   }
 
-  .btn-texts {
-    color: var(--gold);
-    text-decoration: none;
-    font-size: 14px;
-    padding: 6px 14px;
-    border: 1px solid var(--gold-dim);
-    border-radius: 8px;
-    transition: all 0.2s;
-  }
-
-  .btn-texts:hover {
-    background: rgba(224,169,74,0.1);
-  }
-
   .count {
     font-size: 13px;
     color: var(--text-muted);
@@ -133,10 +119,11 @@
     color: var(--text);
   }
 
+  /* دراپ‌داون: سمت چپ ثابت */
   .user-dropdown {
     position: absolute;
     top: 100%;
-    left: 0;
+    right: 0; /* در حالت RTL یعنی سمت چپ صفحه */
     min-width: 180px;
     background: var(--card);
     border: 1px solid var(--border);
@@ -155,9 +142,9 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border); /* خط دیوایدر */
+    margin-bottom: 12px;
   }
 
   .user-dropdown .user-avatar {
@@ -181,6 +168,26 @@
     color: var(--text);
   }
 
+  /* استایل لینک متن‌ها در دراپ‌داون */
+  .dropdown-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text); /* رنگ سفید/خاکستری، بدون آبی و بنفش */
+    text-decoration: none; /* حذف زیرخط */
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s;
+    margin-bottom: 4px;
+  }
+
+  .dropdown-link:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--gold); /* وقتی هاور می‌کنید طلایی می‌شود */
+  }
+
+  /* استایل دکمه خروج */
   .user-dropdown .btn-logout {
     display: flex;
     align-items: center;
@@ -195,6 +202,7 @@
     font-family: inherit;
     width: 100%;
     transition: background 0.2s;
+    margin-top: 4px;
   }
 
   .user-dropdown .btn-logout:hover {
@@ -270,17 +278,19 @@
     background: var(--card-hover);
     border-color: var(--gold-dim);
   }
-.poster-thumb {
-  width: 50px;
-  height: 70px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  overflow: hidden;
-  background: linear-gradient(155deg, var(--velvet), #3c1119);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+  
+  .poster-thumb {
+    width: 50px;
+    height: 70px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: linear-gradient(155deg, var(--velvet), #3c1119);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
   .title { font-size: 16px; font-weight: 600; flex: 1; min-width: 0; }
   .title span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -311,10 +321,7 @@
   }
 
   @media (max-width: 600px) {
-    header { flex-direction: column; align-items: stretch; gap: 8px; }
-    .brand { justify-content: center; }
-    .count { text-align: center; }
-    .user-section { align-self: flex-end; }
+    header { flex-direction: row; align-items: center; flex-wrap: wrap; gap: 8px; }
   }
 </style>
 </head>
@@ -327,6 +334,8 @@
       <h1>فیلم‌ها</h1>
     </div>
     <span class="count" id="count"></span>
+  </div>
+
   <div class="user-section">
     <button class="btn-user" id="userMenuBtn">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -338,6 +347,7 @@
         <path d="m6 9 6 6 6-6"/>
       </svg>
     </button>
+    
     <div class="user-dropdown" id="userDropdown">
       <div class="user-info">
         <div class="user-avatar">
@@ -348,10 +358,11 @@
         </div>
         <div class="user-name" id="dropdownUsername">کاربر</div>
       </div>
-       <a href="/texts.html">
       
-      متن‌ها
-    </a>
+      <!-- لینک متن‌ها با کلاس dropdown-link -->
+      <a href="/texts.html" class="dropdown-link">
+        متن‌ها
+      </a>
       
       <button class="btn-logout" id="logoutBtn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -363,8 +374,6 @@
       </button>
     </div>
   </div>
-  </div>
-  
 </header>
 
 <div class="search-wrap">

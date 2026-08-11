@@ -78,30 +78,8 @@
     color: var(--text-muted);
   }
 
-  .btn-back {
-    color: var(--gold);
-    text-decoration: none;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
-  .btn-back:hover {
-    opacity: 0.8;
-  }
-
-  main {
-    max-width: 720px;
-    margin: 0 auto;
-  }
-
-  .add-section {
-    margin-bottom: 20px;
-    display: flex;
-    gap: 10px;
-  }
-.user-section {
+  /* ===== بخش کاربری ===== */
+  .user-section {
     position: relative;
     display: flex;
     align-items: center;
@@ -134,10 +112,11 @@
     color: var(--text);
   }
 
+  /* دراپ‌داون: سمت چپ ثابت */
   .user-dropdown {
     position: absolute;
     top: 100%;
-    left: 0;
+    right: 0; /* چون فایل RTL است، راست یعنی سمت چپ صفحه! */
     min-width: 180px;
     background: var(--card);
     border: 1px solid var(--border);
@@ -156,9 +135,9 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 10px;
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border); /* دیوایدر */
   }
 
   .user-dropdown .user-avatar {
@@ -182,6 +161,26 @@
     color: var(--text);
   }
 
+  /* استایل لینک فیلم‌ها/متن‌ها در دراپ‌داون */
+  .dropdown-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text); /* رنگ سفید/خاکستری تیره بدون آبی یا بنفش */
+    text-decoration: none; /* حذف زیرخط */
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: background 0.2s;
+    margin-bottom: 4px;
+  }
+
+  .dropdown-link:hover {
+    background: rgba(255,255,255,0.05);
+    color: var(--gold);
+  }
+
+  /* استایل دکمه خروج */
   .user-dropdown .btn-logout {
     display: flex;
     align-items: center;
@@ -195,6 +194,7 @@
     font-size: 13px;
     font-family: inherit;
     width: 100%;
+    margin-top: 4px;
     transition: background 0.2s;
   }
 
@@ -204,6 +204,18 @@
 
   .user-dropdown .btn-logout svg {
     stroke: #e74c3c;
+  }
+
+  /* ادامه استایل‌های قبلی */
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .add-section {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
   }
 
   .add-section input {
@@ -544,12 +556,11 @@
     .modal-box .modal-body {
       font-size: 14px;
     }
-  }
-    @media (max-width: 600px) {
-    header { flex-direction: column; align-items: stretch; gap: 8px; }
-    .brand { justify-content: center; }
-    .count { text-align: center; }
-    .user-section { align-self: flex-end; }
+    header { 
+      flex-direction: row; /* روی موبایل هم کنار هم بمانند */
+      align-items: center;
+      flex-wrap: wrap;
+    }
   }
 </style>
 </head>
@@ -559,7 +570,9 @@
   <div class="brand">
     <div class="brand-mark">ABC</div>
     <h1>متن‌ها</h1>
-    <div class="user-section">
+  </div>
+  
+  <div class="user-section">
     <button class="btn-user" id="userMenuBtn">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -570,6 +583,7 @@
         <path d="m6 9 6 6 6-6"/>
       </svg>
     </button>
+    
     <div class="user-dropdown" id="userDropdown">
       <div class="user-info">
         <div class="user-avatar">
@@ -580,10 +594,11 @@
         </div>
         <div class="user-name" id="dropdownUsername">کاربر</div>
       </div>
-       <a href="/movies.html">
       
-      فیلم‌ها
-    </a>
+      <!-- لینک فیلم‌ها با کلاس جدید dropdown-link -->
+      <a href="/movies.html" class="dropdown-link">
+        فیلم‌ها
+      </a>
       
       <button class="btn-logout" id="logoutBtn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -595,8 +610,6 @@
       </button>
     </div>
   </div>
-  </div>
-  
 </header>
 
 <main>
@@ -641,6 +654,56 @@ const modalBody = document.getElementById('modalBody');
 const modalCopyBtn = document.getElementById('modalCopyBtn');
 const modalCloseBtn = document.getElementById('modalCloseBtn');
 const modalCloseFooter = document.getElementById('modalCloseFooter');
+
+// ============================================================
+// 👤 منوی کاربری (بخش اضافه شده که در فایل قبلی نبود)
+// ============================================================
+const userMenuBtn = document.getElementById('userMenuBtn');
+const userDropdown = document.getElementById('userDropdown');
+
+userMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  userDropdown.classList.toggle('show');
+});
+
+document.addEventListener('click', () => {
+  userDropdown.classList.remove('show');
+});
+
+// ============================================================
+// 🚪 خروج (بخش اضافه شده)
+// ============================================================
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  const username = localStorage.getItem('username');
+  
+  if (username) {
+    try {
+      await fetch('/api/auth?action=logout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username }),
+      });
+    } catch (err) {
+      console.log('خطا در خروج:', err);
+    }
+  }
+
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('username');
+  window.location.href = '/login.html';
+});
+
+// نمایش نام کاربری
+const username = localStorage.getItem('username');
+if (username) {
+  document.getElementById('usernameDisplay').textContent = username;
+  document.getElementById('dropdownUsername').textContent = username;
+}
+
+// ============================================================
+// ادامه کدهای مدیریت متن‌ها
+// ============================================================
 
 let allTexts = [];
 let currentModalText = '';
