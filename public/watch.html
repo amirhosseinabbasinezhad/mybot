@@ -237,14 +237,14 @@
     z-index: 6;
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 6px;
     direction: ltr;
     background: rgba(0,0,0,0.6);
     backdrop-filter: blur(12px);
-    padding: 4px 8px;
-    border-radius: 14px;
+    padding: 6px 12px;
+    border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.06);
-    transition: opacity 0.3s ease;
+    transition: opacity 0.4s ease;
   }
 
   .controls .btn-ctrl {
@@ -359,7 +359,7 @@
     .topbar .film-title { font-size: 13px; max-width: 50%; }
 
     .controls {
-      bottom: 65px;
+      bottom: 60px;
       padding: 5px 10px;
       gap: 4px;
       border-radius: 10px;
@@ -375,7 +375,7 @@
   }
 
   /* ==========================================================
-     🖥️ تلویزیون/دسکتاپ: 10px از پایین
+     🖥️ تلویزیون/دسکتاپ: چسبیده به پایین
      ========================================================== */
   @media (min-width: 601px) {
     .controls {
@@ -396,6 +396,13 @@
     .controls .btn-ctrl svg { width: 18px; height: 18px; }
     .controls .btn-play-big { width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
     .controls .btn-play-big svg { width: 20px; height: 20px; }
+  }
+
+  /* ==========================================================
+     کمرنگ شدن نوار وقتی کاریش نداریم
+     ========================================================== */
+  .controls.idle {
+    opacity: 0.2;
   }
 </style>
 </head>
@@ -768,16 +775,20 @@ function formatTime(seconds) {
 }
 
 // ============================================================
-// 🖱️ نمایش کنترل‌ها
+// 🖱️ نمایش/کمرنگ شدن کنترل‌ها
 // ============================================================
 let controlsTimeout;
 
 function showControls() {
-  controls.style.opacity = '1';
+  controls.classList.remove('idle');
   clearTimeout(controlsTimeout);
   controlsTimeout = setTimeout(() => {
-    controls.style.opacity = '0.3';
+    controls.classList.add('idle');
   }, 3000);
+}
+
+function hideControls() {
+  controls.classList.add('idle');
 }
 
 document.addEventListener('mousemove', showControls);
